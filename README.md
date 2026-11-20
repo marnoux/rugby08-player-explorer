@@ -18,15 +18,24 @@ A searchable browser for every player in the 2007 PC game *Rugby 08*: all 23 rat
 
 A local editor that changes the game itself: squads, captains and kickers, and every player's name, positions, nationality, height, weight, ratings, special skills and head model.
 
-**Start it:** double-click `Rugby 08 Editor.cmd` (needs [Node.js](https://nodejs.org)), or run `node editor/server.js --open`. It opens http://localhost:4319. Keep the window open while you edit.
+**Start it** (needs [Node.js](https://nodejs.org) 18 or later):
+
+- **Windows:** double-click `Rugby 08 Editor.cmd`.
+- **Linux or macOS, game under Wine:** run `./rugby08-editor.sh`. It looks for the game in `~/.wine`, `$WINEPREFIX` and `~/Games/*` (Lutris). If yours is elsewhere, add `--game "<the folder that contains Data/data.gob>"`.
+- **Either:** `node editor/server.js --open`, with the same options.
+
+It opens http://localhost:4319. Keep the window open while you edit.
 
 **Squads tab:** pick a team, then replace, move or empty any of its 30 slots. Slots 1–15 are the starting line-up. Warnings show players out of position or of another nationality. Below the squad you can set the captain and kicking roles.
 
 **Players tab:** search all 1,904 players and edit any field. Changed fields are highlighted with their original value, and the overall rating updates as you go.
 
-**Save to game** (close the game first) writes an edited `data.gob` to Windows' VirtualStore folder for the install, for both `Data\data.gob` and `Data\motion\data.gob`. The game reads those copies when it's started normally from the Start menu or desktop shortcut. It ignores them if it's run as administrator. The original files in Program Files are never changed.
+**Save to game** (close the game first) updates both `Data/data.gob` and `Data/motion/data.gob`. Where it writes depends on the system:
 
-**Restore original** deletes the edited copies, which puts the game back exactly as installed.
+- **Windows, game in Program Files:** the edited copies go to Windows' VirtualStore folder for the install. The game reads them when it's started normally from the Start menu or desktop shortcut, and ignores them if it's run as administrator. The files in Program Files are never changed. **Restore original** deletes the copies.
+- **Linux or macOS (Wine), or a Windows install outside Program Files:** the first save keeps the original as `data.gob.original` next to it. Every save is built from that backup and written over `data.gob`. **Restore original** puts the backup back. Add `--direct` to use this on Windows too.
+
+The Linux and macOS support is tested on Windows with a copied install, not yet on a real Wine setup.
 
 What isn't known yet:
 - Role 2 of each team (role 1 is usually the captain, roles 3–7 are kicking duties)
@@ -52,7 +61,8 @@ For scripts, `tools/squad-edit.js` does squad swaps from the command line and `t
 | `tools/gob.js` | Reads and writes `data.gob` and the game database inside it (player and team record layouts are documented at the top) |
 | `tools/squad-edit.js` | Command-line squad viewer and editor |
 | `editor/` | The squad and player editor: `server.js` and its page `index.html` |
-| `Rugby 08 Editor.cmd` | Double-click to start the editor |
+| `Rugby 08 Editor.cmd` | Starts the editor on Windows (double-click) |
+| `rugby08-editor.sh` | Starts the editor on Linux or macOS |
 
 ## Preview locally
 

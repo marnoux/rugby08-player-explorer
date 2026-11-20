@@ -184,7 +184,7 @@ table.sq{width:100%;border-collapse:collapse;font-size:14px;background:var(--sur
   <button class="btn sm" type="button" id="restore-open" title="Delete the edited copies so the game uses its original data">Restore original…</button>
   <div class="restore-pop" id="restore-pop" hidden>
     <strong>Restore the original game data?</strong>
-    <span>This deletes the edited copies, so the game goes back to its original squads and players. Unsaved changes are discarded too.</span>
+    <span id="restore-text">This deletes the edited copies, so the game goes back to its original squads and players. Unsaved changes are discarded too.</span>
     <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" type="button" id="restore-cancel">Cancel</button><button class="btn danger" type="button" id="restore-go">Restore original</button></div>
   </div>
 </header>
@@ -325,10 +325,29 @@ function problems() {
 }
 
 /* ---------- Header ---------- */
+// Wording that depends on where saves go (see the modes at the top of editor/server.js).
+const MODE_TEXT = {
+  virtualstore: {
+    saved: 'Saved. Start Rugby 08 from the Start menu or desktop shortcut (not as administrator) to play with your changes.',
+    restore: 'This deletes the edited copies, so the game goes back to its original squads and players. Unsaved changes are discarded too.',
+  },
+  direct: {
+    saved: "Saved into the game's Data folder. Start Rugby 08 as usual to play with your changes.",
+    restore: 'This puts back the original data.gob that the editor kept when you first saved, so the game goes back to its original squads and players. Unsaved changes are discarded too.',
+  },
+  target: {
+    saved: 'Saved to the test folder given with --target.',
+    restore: 'This deletes the edited copies in the test folder. Unsaved changes are discarded too.',
+  },
+};
+const modeText = () => MODE_TEXT[S.meta.mode] || MODE_TEXT.virtualstore;
+
 function renderHeader() {
   const edited = S.meta.source === 'edited';
   const pill = $('#pill');
-  pill.textContent = edited ? 'Game uses your edits' : 'Game uses original data';
+  pill.textContent = S.meta.mode === 'target' ? (edited ? 'Test folder has edits' : 'Test folder empty') : edited ? 'Game uses your edits' : 'Game uses original data';
+  pill.title = `Saves go to:\n${S.meta.files.join('\n')}`;
+  $('#restore-text').textContent = modeText().restore;
   pill.className = 'pill' + (edited ? ' edited' : '');
   $('#savedat').textContent = edited && S.meta.savedAt ? `saved ${fmtTime(S.meta.savedAt)}` : '';
   let n = 0;
@@ -697,7 +716,7 @@ $('#save').addEventListener('click', () => busy('Saving…', async () => {
   banner('');
   const state = await api('/api/save', { players: S.cur.players, teams: S.cur.teams });
   load(state); renderAll();
-  toast('Saved. Start Rugby 08 from the Start menu or desktop shortcut (not as administrator) to play with your changes.');
+  toast(modeText().saved);
 }));
 $('#discard').addEventListener('click', () => { S.cur = clone(S.saved); index(); S.swapFrom = null; S.pick = null; renderAll(); toast('Unsaved changes discarded'); });
 $('#restore-open').addEventListener('click', () => { $('#restore-pop').hidden = false; $('#restore-cancel').focus(); });

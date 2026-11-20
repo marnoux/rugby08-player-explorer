@@ -113,6 +113,11 @@ function readEntryFromFile(gobPath, name) {
   } finally { fs.closeSync(fd); }
 }
 
+function hasEntry(gobPath, name) {
+  const fd = fs.openSync(gobPath, 'r');
+  try { return readHeaderDir(fd).some(e => e.name === name); } catch { return false; } finally { fs.closeSync(fd); }
+}
+
 // Writes outPath as a copy of origPath with one entry replaced. The new entry is appended at the end and the
 // directory is pointed at it; nothing else in the archive changes. Checks the result before moving it into place.
 function writePatchedGob(origPath, outPath, name, data) {
@@ -262,5 +267,5 @@ function teamNamesFromKitXml(xml) {
 
 module.exports = {
   RDF_NAME, KIT_XML_NAME, SLOTS, ROLES, TEAM_VALUES, RATINGS, SKILLS, POSITIONS, NATIONALITIES,
-  readDir, unrefpack, refpackLiteral, readEntryFromFile, writePatchedGob, copyInto, parseDb, applyDb, teamNamesFromKitXml,
+  readDir, unrefpack, refpackLiteral, readEntryFromFile, hasEntry, writePatchedGob, copyInto, parseDb, applyDb, teamNamesFromKitXml,
 };
