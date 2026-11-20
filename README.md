@@ -7,8 +7,8 @@ A searchable browser for every player in the 2007 PC game *Rugby 08*: all 23 rat
 ## What you can do
 
 - **Search everything** with plain text or filters you can combine:
-  `speed>90 pos:wing`, `skill:goalkicker team:bulls`, `nat:south-african`, `kick:80-90`, `height>195`, `-pos:prop`
-- **Sort and scan** a table of all 1,765 players, with rating cells shaded by value
+  `ovr>85 pos:wing`, `skill:goalkicker team:bulls`, `nat:south-african`, `kick:80-90`, `height>195`, `-pos:prop`
+- **Sort and scan** a table of all 1,765 players, with an overall rating and every rating cell shaded by value
 - **Open any player** to see every rating against the average for their position, their rank, special skills, the most similar players, and every squad they appear in
 - **Open any team** for a squad profile, squad leaders and a depth chart
 - **Compare** up to four players side by side
@@ -56,6 +56,7 @@ node tools/build-pages.js
 - The file's column headings swap the height and weight units. The values are inches/cm and pounds/kg.
 - "I. Resist" is listed among the special skills but holds a level from 0 to 3.
 - The rating groups (Ball play, Athletic, Contact, Set piece, Mindset) are this site's own grouping, not part of the game.
+- Overall (OVR) is this site's estimate, not a game value: a weighted average of the ratings that matter most for each player's main position. The weights are in `OVR_W` in `index.html`, and each player's page shows the ones used.
 - Treviso's list repeats 27 rows (shown once), England appears twice with slightly different lists, and 10 team lists are empty.
 
 *Rugby 08* is a trademark of Electronic Arts. This is an unofficial fan project, not affiliated with or endorsed by EA.

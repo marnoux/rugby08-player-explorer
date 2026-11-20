@@ -146,6 +146,8 @@ table.grid{border-collapse:separate;border-spacing:0;font-size:13.5px;font-varia
 .pc.p1{color:var(--ink)}
 .grid td.rt{min-width:42px;text-align:center;background-color:color-mix(in srgb,var(--heat) var(--m,0%),var(--surface))}
 .grid td.rt.top{font-weight:700}
+.grid .c-ovr{text-align:center}
+.grid td.ovr{min-width:50px;font-family:var(--f-display);font-weight:700;font-size:17px;color:var(--ink)}
 .grid .gs{border-left:1px solid var(--line-2)}
 .grid .c-skills{text-align:left}
 .sk{display:inline-block;font-family:var(--f-display);font-weight:600;font-size:12px;letter-spacing:.03em;padding:1px 5px;border-radius:4px;background:var(--turf-wash);color:var(--ink);margin-right:3px}
@@ -197,7 +199,17 @@ table.grid{border-collapse:separate;border-spacing:0;font-size:13.5px;font-varia
 .dr-bar .pos-of{font-size:13px;color:var(--muted);margin-right:auto}
 .dr-sec{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
 .dr-sec > h3{font-family:var(--f-display);font-weight:600;font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
-.dossier-head{display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:center}
+.dossier-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center}
+.ovr-big{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:72px;padding:8px 10px;border-radius:var(--r-md);background:var(--turf-wash)}
+.ovr-big .v{font-family:var(--f-display);font-weight:700;font-size:40px;line-height:1;color:var(--ink)}
+.ovr-big .k{font-family:var(--f-display);font-weight:600;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.ovr-line{margin:0;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.ovr-line b{font-family:var(--f-display);font-size:32px;line-height:1}
+.ovr-line span{color:var(--ink-2);font-size:14px}
+.ovr-parts{display:flex;flex-wrap:wrap;gap:6px}
+.op{display:inline-flex;align-items:baseline;gap:6px;background:var(--paper);border-radius:6px;padding:4px 9px;font-size:13px}
+.op .l{color:var(--ink-2)}
+.op i{font-style:normal;color:var(--muted);font-size:12px}
 .shirt{width:76px;height:84px;display:grid;place-items:center;background:var(--turf);color:var(--turf-ink);font-family:var(--f-display);font-weight:700;font-size:38px;line-height:1;clip-path:polygon(22% 0,38% 7%,62% 7%,78% 0,100% 16%,90% 34%,82% 30%,82% 100%,18% 100%,18% 30%,10% 34%,0 16%);padding-top:12px}
 .shirt.small{font-size:26px}
 .dossier-head h2{font-family:var(--f-display);font-weight:700;font-size:38px;line-height:1;text-transform:uppercase;letter-spacing:.01em;overflow-wrap:anywhere}
@@ -508,6 +520,29 @@ const POS = [
   {n:'Full Back', a:'FB', no:'15', pl:'full backs', u:'b', k:['fb','full-back','fullback','15']},
 ];
 const POS_BY_NAME = Object.fromEntries(POS.map((p, i) => [p.n, i]));
+// Overall (OVR) is this site's estimate, not a game value: a weighted average of the ratings
+// that matter most for the main position. Pairs are [index into R, weight], one list per POS entry.
+const OVR_W = [
+  [[12,3],[10,2.5],[11,1.5],[9,1.5],[1,1],[17,1],[0,.5],[5,.5],[21,.5]],
+  [[13,3],[14,2.5],[12,2],[10,1.5],[11,1.5],[9,1.5],[1,1],[17,1],[5,.5]],
+  [[12,3],[10,2.5],[11,1.5],[9,1.5],[1,1],[17,1],[0,.5],[5,.5],[21,.5]],
+  [[14,3],[10,2],[11,1.5],[9,1.5],[12,1.5],[1,1],[17,1],[5,1],[0,.5]],
+  [[9,2.5],[11,2],[10,1.5],[1,1.5],[17,1.5],[14,1],[2,1],[5,1],[0,1],[21,1]],
+  [[11,2.5],[9,2.5],[2,1.5],[17,1.5],[1,1.5],[3,1],[5,1],[0,1],[10,1],[21,1]],
+  [[10,2],[0,2],[5,1.5],[11,1.5],[9,1.5],[1,1],[2,1],[17,1],[14,1]],
+  [[6,3],[5,2],[3,1.5],[4,1.5],[7,1.5],[2,1],[0,1],[1,1],[20,1],[9,.5]],
+  [[7,2.5],[6,2],[5,2],[20,2],[8,1.5],[0,1.5],[4,1],[1,1],[2,.5],[9,.5]],
+  [[0,2],[5,2],[9,2],[1,2],[2,1.5],[10,1.5],[3,1],[4,1],[6,1],[7,.5]],
+  [[2,3],[3,2],[4,2],[0,2],[5,1.5],[1,1],[9,1],[7,.5]],
+  [[7,2],[5,2],[1,2],[2,1.5],[0,1.5],[9,1.5],[3,1],[4,1],[6,1]],
+];
+function overall(p) {
+  const w = OVR_W[p.p1];
+  if (!w) return Math.round(mean(p.r));
+  let s = 0, t = 0;
+  for (const [i, k] of w) { s += p.r[i] * k; t += k; }
+  return Math.round(s / t);
+}
 const DEPTH = [
   {l:'Forwards', pos:[0,1,2,3,4,5,6]},
   {l:'Backs', pos:[7,8,9,10,11]},
@@ -516,6 +551,7 @@ const PRESETS = [
   {l:'Springboks', q:'team:south-africa', s:['squad', 1]},
   {l:'All South Africans', q:'nat:south-african', s:['squad', 1]},
   {l:'Star players', q:'is:star', s:['squad', 1]},
+  {l:'Highest rated', q:'', s:['ovr', -1]},
   {l:'Fastest', q:'', s:['r2', -1]},
   {l:'Goal kickers', q:'skill:goalkicker', s:['r8', -1]},
   {l:'Line-out jumpers', q:'skill:jump', s:['r14', -1]},
@@ -531,6 +567,7 @@ const SYNTAX = [
   ['pos:forward', 'All forwards (or pos:back)'],
   ['team:bulls', 'Team. Comma for several: team:bulls,sharks'],
   ['nat:fijian', 'Nationality'],
+  ['ovr>85', 'Overall rating (this site\'s estimate)'],
   ['speed>90', 'Any rating with > < >= <= ='],
   ['kick:80-90', 'Rating range'],
   ['height>195', 'Height in cm (weight in kg)'],
@@ -591,6 +628,7 @@ function prepare(players, teams) {
     p.hay = ' ' + norm([p.name, p.nat, ...p.pos, ...p.teams.map(m => m.team.name), p.id].join(' ')) + ' ';
     p.order = p.teams[0].team.order * 1000 + p.teams[0].slot;
     p.g = GROUPS.map(g => mean(g.idx.map(i => p.r[i])));
+    p.ovr = overall(p);
     S.byId[p.id] = p;
     (S.heads[p.head] = S.heads[p.head] || []).push(p);
   }
@@ -602,6 +640,7 @@ function prepare(players, teams) {
     t.gAvg = GROUPS.map((_, gi) => mean(ps.map(p => p.g[gi])));
     t.stars = ps.filter(p => p.star);
     t.hCm = mean(ps.map(p => p.h[1])); t.wKg = mean(ps.map(p => p.w[1]));
+    t.ovr = mean(ps.map(p => p.ovr));
     const nc = {}; ps.forEach(p => nc[p.nat] = (nc[p.nat] || 0) + 1);
     t.natMix = Object.entries(nc).sort((a, b) => b[1] - a[1]);
   }
@@ -614,13 +653,16 @@ function prepare(players, teams) {
       avg: R.map((_, i) => mean(c.map(p => p.r[i]))),
       gAvg: GROUPS.map((_, gi) => mean(c.map(p => p.g[gi]))),
       vals: R.map((_, i) => c.map(p => p.r[i]).sort((a, b) => b - a)),
+      ovrVals: c.map(p => p.ovr).sort((a, b) => b - a),
+      ovrAvg: mean(c.map(p => p.ovr)),
     };
   });
   const nc = {}; players.forEach(p => nc[p.nat] = (nc[p.nat] || 0) + 1);
   S.nats = Object.entries(nc).sort((a, b) => a[0].localeCompare(b[0]));
 }
-function rankIn(pi, i, v) {
-  const vals = S.cohort[pi].vals[i];
+function rankIn(pi, i, v) { return rankList(S.cohort[pi].vals[i], v); }
+function rankOvr(pi, v) { return rankList(S.cohort[pi].ovrVals, v); }
+function rankList(vals, v) {
   let lo = 0, hi = vals.length;
   while (lo < hi) { const mid = (lo + hi) >> 1; if (vals[mid] > v) lo = mid + 1; else hi = mid; }
   return {rank: lo + 1, of: vals.length};
@@ -634,6 +676,7 @@ NUM.height = {label: 'Height (cm)', get: p => p.h[1]};
 NUM.weight = {label: 'Weight (kg)', get: p => p.w[1]};
 NUM.resist = {label: 'I. Resist', get: p => p.ir};
 NUM.skills = {label: 'Special skills', get: p => p.nSkills};
+NUM.ovr = NUM.overall = {label: 'Overall', get: p => p.ovr};
 const TEXTF = ['pos', 'pos1', 'team', 'nat', 'skill', 'is', 'id', 'head'];
 const ALLKEYS = [...Object.keys(NUM), ...TEXTF];
 const OPSYM = {'>':'>', '<':'<', '>=':'≥', '<=':'≤', '=':'=', ':':'='};
@@ -827,6 +870,7 @@ function sortVal(p, key) {
   if (key === 'height') return p.h[1];
   if (key === 'weight') return p.w[1];
   if (key === 'skills') return p.nSkills;
+  if (key === 'ovr') return p.ovr;
   if (key === 'resist') return p.ir;
   if (key[0] === 'g') return p.g[+key.slice(1)];
   return p.r[+key.slice(1)];
@@ -848,6 +892,7 @@ function sortName(key) {
   if (key === 'weight') return 'weight';
   if (key === 'skills') return 'number of special skills';
   if (key === 'resist') return 'I. Resist';
+  if (key === 'ovr') return 'overall';
   return R[+key.slice(1)].l.toLowerCase();
 }
 
@@ -876,11 +921,11 @@ function th(key, label, title, cls = '') {
 }
 function renderHead() {
   const cols = columns();
-  let g = `<tr class="g"><th class="st c-idx"></th><th class="st st2 c-name">Player</th><th colspan="4">Build</th>`;
+  let g = `<tr class="g"><th class="st c-idx"></th><th class="st st2 c-name">Player</th><th colspan="5">Profile</th>`;
   GROUPS.forEach(gr => { if (S.cols.has(gr.k)) g += `<th class="gs" colspan="${gr.idx.length}">${gr.l}</th>`; });
   if (S.cols.has('skills')) g += `<th class="gs" colspan="2">Special</th>`;
   g += '</tr>';
-  let c = `<tr class="c">${th('squad', S.singleTeam ? 'No.' : '#', S.singleTeam ? 'Squad number: order in the team list' : 'Sort by team, then squad order', 'st c-idx')}${th('name', 'Name', 'Sort by surname', 'st st2 c-name')}${th('team', 'Team', 'Team', 'c-team')}${th('pos', 'Pos', 'Positions, main first', 'c-pos')}${th('height', 'Ht', 'Height in cm')}${th('weight', 'Wt', 'Weight in kg')}`;
+  let c = `<tr class="c">${th('squad', S.singleTeam ? 'No.' : '#', S.singleTeam ? 'Squad number: order in the team list' : 'Sort by team, then squad order', 'st c-idx')}${th('name', 'Name', 'Sort by surname', 'st st2 c-name')}${th('ovr', 'OVR', 'Overall rating (site estimate): weighted average of the key ratings for the main position', 'c-ovr')}${th('team', 'Team', 'Team', 'c-team')}${th('pos', 'Pos', 'Positions, main first', 'c-pos')}${th('height', 'Ht', 'Height in cm')}${th('weight', 'Wt', 'Weight in kg')}`;
   cols.forEach(col => { const r = R[col.i]; c += th('r' + col.i, r.a, `${r.l}${r.g !== r.l ? ` (game label: ${r.g})` : ''}`, col.gs ? 'gs' : ''); });
   if (S.cols.has('skills')) c += th('skills', 'Skills', 'Special skills', 'gs c-skills') + th('resist', 'Res', 'I. Resist level (0–3)');
   c += '</tr>';
@@ -897,6 +942,7 @@ function rowHTML(p, i, cols) {
   let h = `<tr data-id="${p.id}" tabindex="0"${S.drawerId === p.id ? ' aria-selected="true"' : ''}>`
     + `<td class="st c-idx">${no}</td>`
     + `<td class="st st2 c-name"><span class="nm">${p.star ? '<span class="star" title="Star player (marked ^ in the game file)">★</span>' : ''}${esc(p.name)}</span><span class="sub">${esc(p.nat)}</span></td>`
+    + `<td class="rt ovr${p.ovr >= 90 ? ' top' : ''}" style="--m:${heat(p.ovr)}%" title="Overall ${p.ovr} as ${POS[p.p1] ? POS[p.p1].n : 'player'} (site estimate)">${p.ovr}</td>`
     + `<td class="c-team" title="${esc(teamTitle)}">${teamCell}</td><td class="c-pos">${pos}</td>`
     + `<td title="${ftin(p.h[0])}">${p.h[1]}</td><td title="${p.w[0]} lb">${p.w[1]}</td>`;
   for (const col of cols) { const v = p.r[col.i]; h += `<td class="rt${col.gs ? ' gs' : ''}${v >= 90 ? ' top' : ''}" style="--m:${heat(v)}%">${v}</td>`; }
@@ -913,7 +959,7 @@ function renderTable() {
   $('#count').innerHTML = `<b>${fmt(n)}</b> ${n === S.players.length ? 'players' : `of ${fmt(S.players.length)} players`}`;
   $('#sortlabel').textContent = `Sorted by ${sortName(S.sort.key)}${['squad','name','team','pos'].includes(S.sort.key) ? (S.sort.dir < 0 ? ', reversed' : '') : (S.sort.dir < 0 ? ', highest first' : ', lowest first')}`;
   if (!n) {
-    const cols = 6 + columns().length + (S.cols.has('skills') ? 2 : 0);
+    const cols = 7 + columns().length + (S.cols.has('skills') ? 2 : 0);
     tb.innerHTML = `<tr><td colspan="${cols}" style="text-align:left;height:auto"><div class="empty"><h3>No players match</h3><p>Remove a filter above, or clear the search to see all ${fmt(S.players.length)} players.</p><button class="btn" type="button" data-clear>Clear search</button></div></td></tr>`;
     S.rendered = 0; return;
   }
@@ -928,7 +974,7 @@ function renderMore() {
   let h = '';
   for (let i = S.rendered; i < end; i++) h += rowHTML(S.results[i], i, cols);
   S.rendered = end;
-  if (end < S.results.length) h += `<tr class="more-row"><td colspan="${6 + cols.length + (S.cols.has('skills') ? 2 : 0)}">Showing ${fmt(end)} of ${fmt(S.results.length)}. Scroll for more.</td></tr>`;
+  if (end < S.results.length) h += `<tr class="more-row"><td colspan="${7 + cols.length + (S.cols.has('skills') ? 2 : 0)}">Showing ${fmt(end)} of ${fmt(S.results.length)}. Scroll for more.</td></tr>`;
   tb.insertAdjacentHTML('beforeend', h);
   const more = tb.querySelector('.more-row');
   if (more) { io && io.disconnect(); io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) renderMore(); }, {root: $('#tablebox'), rootMargin: '400px'}); io.observe(more); }
@@ -976,11 +1022,11 @@ function buildRail() {
   $('#f-pos').innerHTML = POS.map(p => `<button type="button" class="chip" data-pos="${p.a.toLowerCase()}" title="${p.n}" aria-pressed="false"><span class="n">${p.no}</span>${p.a}</button>`).join('');
   $('#f-skill').innerHTML = SS.map(s => `<button type="button" class="chip" data-skill="${s.k}" title="Game label: ${esc(s.g)}" aria-pressed="false">${s.l}</button>`).join('');
   $('#f-flags').innerHTML = `<button type="button" class="chip" data-flag="is:star" aria-pressed="false">★ Star players</button><button type="button" class="chip" data-flag="is:multi" aria-pressed="false">Club and country</button>`;
-  const opts = R.map((r, i) => `<option value="${r.k}">${r.l}</option>`).join('')
+  const opts = `<option value="ovr">Overall (site estimate)</option>` + R.map((r, i) => `<option value="${r.k}">${r.l}</option>`).join('')
     + `<optgroup label="Group averages">${GROUPS.map(g => `<option value="${g.k}">${g.l}</option>`).join('')}</optgroup>`
     + `<optgroup label="Build"><option value="height">Height (cm)</option><option value="weight">Weight (kg)</option></optgroup>`
     + `<optgroup label="Other"><option value="skills">Number of special skills</option><option value="resist">I. Resist (0–3)</option></optgroup>`;
-  $('#rb-f').innerHTML = opts; $('#rb-f').value = 'speed';
+  $('#rb-f').innerHTML = opts; $('#rb-f').value = 'ovr';
   $('#presets').innerHTML = PRESETS.map((p, i) => `<button type="button" class="preset" data-preset="${i}">${p.l}</button>`).join('');
   $('#syntax-list').innerHTML = SYNTAX.map(([q, d]) => `<dt><button type="button" data-q="${esc(q)}">${esc(q)}</button></dt><dd>${esc(d)}</dd>`).join('');
 }
@@ -1025,7 +1071,8 @@ function renderTeamCard() {
   const el = $('#teamcard'), t = S.singleTeam;
   if (!t || !t.players.length) { el.innerHTML = ''; return; }
   const bars = GROUPS.map((g, gi) => `<div class="cmpbar" title="${esc(t.name)} average ${r0(t.gAvg[gi])}; all players ${r0(S.dbGroupAvg[gi])}"><span>${g.l}</span><div class="track"><div class="fill" style="width:${t.gAvg[gi]}%"></div><div class="tick" style="left:${S.dbGroupAvg[gi]}%"></div></div><b class="num">${r0(t.gAvg[gi])}</b></div>`).join('');
-  const leaders = teamLeaders(t).map(x => `<span class="l">${x.l}</span><button class="plink" type="button" data-open="${x.p.id}">${esc(x.p.name)}</button><span class="v">${x.p.r[x.i]}</span>`).join('');
+  const bestOvr = t.players.reduce((b, x) => !b || x.p.ovr > b.ovr ? x.p : b, null);
+  const leaders = `<span class="l">Highest overall</span><button class="plink" type="button" data-open="${bestOvr.id}">${esc(bestOvr.name)}</button><span class="v">${bestOvr.ovr}</span>` + teamLeaders(t).map(x => `<span class="l">${x.l}</span><button class="plink" type="button" data-open="${x.p.id}">${esc(x.p.name)}</button><span class="v">${x.p.r[x.i]}</span>`).join('');
   const depthCol = d => d.pos.map(pi => {
     const ps = t.players.filter(x => x.p.p1 === pi);
     return `<div class="depth-row"><span class="no">${POS[pi].no.split(/[–·]/)[0]}</span><div><span class="ps">${POS[pi].n}</span><div class="names">${ps.length ? ps.map(x => `<span><button class="plink" type="button" data-open="${x.p.id}">${esc(x.p.name)}</button><span class="slot">#${x.slot}</span></span>`).join('') : '<span class="mut">—</span>'}</div></div></div>`;
@@ -1037,7 +1084,7 @@ function renderTeamCard() {
   el.innerHTML = `<section class="teamcard" aria-label="${esc(t.name)} squad summary">
     <div class="tc-head">
       <div><p class="eyebrow">${esc(t.group)} · ${t.players.length} players</p><h2>${esc(t.name)}</h2>
-      <p class="tc-meta">Average ${r0(t.hCm)} cm and ${r0(t.wKg)} kg · ${esc(natTxt)}${t.stars.length ? ` · <span class="star">★</span>${t.stars.map(p => esc(p.name)).join(', ')}` : ''}</p></div>
+      <p class="tc-meta">Average overall ${r0(t.ovr)} · ${r0(t.hCm)} cm and ${r0(t.wKg)} kg ·${esc(natTxt)}${t.stars.length ? ` · <span class="star">★</span>${t.stars.map(p => esc(p.name)).join(', ')}` : ''}</p></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">${natBtn}<a class="btn sm" href="#teams">All teams</a></div>
     </div>
     ${t.notes.length ? `<p class="notes">${t.notes.map(esc).join(' ')}</p>` : ''}
@@ -1103,7 +1150,7 @@ function buildSugg() {
   const tm = S.teams.filter(x => x.n && x.nameN.includes(w)).slice(0, 4);
   tm.forEach(x => items.push({group: 'Teams', label: esc(x.name), hint: `${x.group} · ${x.n} players`, apply: () => replaceToken(tok, `team:${x.slug} `)}));
   const pm = S.players.filter(p => p.nameN.includes(w)).sort((a, b) => (b.surname.startsWith(w) - a.surname.startsWith(w)) || b.star - a.star || a.surname.localeCompare(b.surname)).slice(0, 8);
-  pm.forEach(p => items.push({group: 'Players', label: `${p.star ? '<span class="star">★</span>' : ''}${esc(p.name)}`, hint: `${POS[p.p1] ? POS[p.p1].n : ''} · ${esc(p.teams.map(m => m.team.name).join(', '))}`, apply: () => { hideSugg(); openPlayerHash(p.id); }}));
+  pm.forEach(p => items.push({group: 'Players', label: `${p.star ? '<span class="star">★</span>' : ''}${esc(p.name)}`, hint: `OVR ${p.ovr} · ${POS[p.p1] ? POS[p.p1].n : ''} · ${esc(p.teams.map(m => m.team.name).join(', '))}`, apply: () => { hideSugg(); openPlayerHash(p.id); }}));
   return items;
 }
 function showSugg() {
@@ -1181,6 +1228,8 @@ function renderDrawer(id) {
   }).join('')}</div>`).join('');
   const sims = similar(p, S.simSamePos);
   const face = (S.heads[p.head] || []).filter(q => q !== p);
+  const ow = OVR_W[p.p1] || [];
+  const orank = pos1 ? rankOvr(p.p1, p.ovr) : null;
   dr.innerHTML = `
   <div class="dr-bar">
     <span class="pos-of">${idx >= 0 ? `${fmt(idx + 1)} of ${fmt(S.results.length)} in your results` : 'Not in your current results'}</span>
@@ -1193,6 +1242,7 @@ function renderDrawer(id) {
       <div class="shirt${shirtNo.length > 1 ? ' small' : ''}" title="Shirt number for ${pos1 ? pos1.n : ''}">${shirtNo}</div>
       <div style="min-width:0"><h2>${esc(p.name)}${p.star ? '<span class="starbadge">★ Star</span>' : ''}</h2>
       <p class="meta">${esc(p.nat)} · ${pos1 ? pos1.n : 'No position'} · ID ${p.id}</p></div>
+      <div class="ovr-big" title="Overall rating (site estimate)"><span class="v">${p.ovr}</span><span class="k">Overall</span></div>
     </div>
     <div class="tagrow">${p.posIdx.map((pi, k) => `<span class="tag" title="${k ? 'Also listed at' : 'Main position'}"><b>${POS[pi].no}</b>${POS[pi].n}</span>`).join('')}</div>
     <div class="tagrow">${p.teams.map(m => `<button class="tag" type="button" data-team="${m.team.slug}" title="Open ${esc(m.team.name)}"><b>#${m.slot}</b>${esc(m.team.name)}</button>`).join('')}</div>
@@ -1208,6 +1258,12 @@ function renderDrawer(id) {
       <div class="vital"><div class="k">Special skills</div><div class="v">${p.nSkills}</div><div class="x">of 13</div></div>
       <div class="vital" title="Listed as “SS I. Resist” in the game file. It holds a level from 0 to 3."><div class="k">I. Resist</div><div class="v">${p.ir}<span class="pips">${[1,2,3].map(i => `<i class="${i <= p.ir ? 'on' : ''}"></i>`).join('')}</span></div><div class="x">level 0–3</div></div>
     </div>
+  </div>
+  <div class="dr-sec">
+    <h3>Overall rating</h3>
+    <p class="ovr-line"><b>${p.ovr}</b>${orank ? `<span>${ord(orank.rank)} of ${orank.of} ${pos1.pl} · their average is ${r0(co.ovrAvg)}</span>` : ''}</p>
+    <div class="ovr-parts">${ow.map(([i, w]) => `<span class="op" title="${R[i].l} ${p.r[i]}, counted ×${w}"><span class="l">${R[i].l}</span><b>${p.r[i]}</b><i>×${w}</i></span>`).join('')}</div>
+    <p class="mut" style="margin:0;font-size:12.5px">This site's estimate, not a number from the game: a weighted average of the ratings above, using the weights for ${pos1 ? pos1.pl : 'this position'}.</p>
   </div>
   <div class="dr-sec">
     <h3>Profile vs ${pos1 ? 'other ' + pos1.pl : 'everyone'}</h3>
@@ -1229,7 +1285,7 @@ function renderDrawer(id) {
   <div class="dr-sec">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h3>Most similar ratings</h3>
       <button class="chip" type="button" data-simpos aria-pressed="${S.simSamePos}">Same main position only</button></div>
-    <div class="simlist">${sims.map(({q, d}) => `<div class="sim"><button class="plink" type="button" data-open="${q.id}">${q.star ? '<span class="star">★</span>' : ''}${esc(q.name)}</button><span class="m">${POS[q.p1] ? POS[q.p1].a : ''} · ${esc(q.teams[0].team.name)}</span><span class="d" title="Average gap across all 23 ratings">±${d.toFixed(1)}</span></div>`).join('')}</div>
+    <div class="simlist">${sims.map(({q, d}) => `<div class="sim"><button class="plink" type="button" data-open="${q.id}">${q.star ? '<span class="star">★</span>' : ''}${esc(q.name)}</button><span class="m">OVR ${q.ovr} · ${POS[q.p1] ? POS[q.p1].a : ''} · ${esc(q.teams[0].team.name)}</span><span class="d" title="Average gap across all 23 ratings">±${d.toFixed(1)}</span></div>`).join('')}</div>
     <p class="mut" style="margin:0;font-size:12.5px">± is the average gap across all 23 ratings.</p>
   </div>
   <div class="dr-sec">
@@ -1282,6 +1338,7 @@ function playerText(p) {
     `${p.name}${p.star ? ' (star)' : ''} | ${p.nat} | ${p.pos.join(' / ')}`,
     `Teams: ${p.teams.map(m => `${m.team.name} #${m.slot}`).join(', ')}`,
     `Height ${p.h[1]} cm (${ftin(p.h[0])}) | Weight ${p.w[1]} kg (${p.w[0]} lb)`,
+    `Overall ${p.ovr} (site estimate, weighted for ${p.pos[0] || 'no position'})`,
     ...GROUPS.map(g => `${g.l}: ` + g.idx.map(i => `${R[i].l} ${p.r[i]}`).join(', ')),
     `Special skills: ${SS.filter((s, k) => p.sk[k]).map(s => s.l).join(', ') || 'none'} | I. Resist ${p.ir}`,
     `Player ID ${p.id} | Head model ${p.head}`,
@@ -1329,12 +1386,13 @@ function renderCompare() {
   let tb = `<tr class="grp"><td colspan="${ps.length + 1}">Build</td></tr>`
     + `<tr><td>Main position</td>${ps.map(p => `<td>${POS[p.p1] ? POS[p.p1].n : ''}</td>`).join('')}</tr>`
     + `<tr><td>Teams</td>${ps.map(p => `<td>${esc(p.teams.map(m => m.team.name).join(', '))}</td>`).join('')}</tr>`
+    + row('Overall (site estimate)', ps.map(p => p.ovr))
     + row('Height (cm)', ps.map(p => p.h[1])) + row('Weight (kg)', ps.map(p => p.w[1]));
   GROUPS.forEach(g => { tb += `<tr class="grp"><td colspan="${ps.length + 1}">${g.l}</td></tr>` + g.idx.map(i => row(R[i].l, ps.map(p => p.r[i]))).join(''); });
   tb += `<tr class="grp"><td colspan="${ps.length + 1}">Special skills</td></tr>` + SS.map((s, k) => `<tr><td>${s.l}</td>${ps.map(p => `<td>${p.sk[k] ? '✓' : '<span class="mut">–</span>'}</td>`).join('')}</tr>`).join('')
     + row('I. Resist', ps.map(p => p.ir));
   el.innerHTML = `<div class="cmp-head"><h1>Compare</h1>${addBox}</div>
-    <div class="cmp-cards">${ps.map((p, i) => `<div class="cmp-card"><span class="sw" style="background:${SER[i]}"></span><button class="plink cn" type="button" data-open="${p.id}" style="font-family:var(--f-display);font-size:22px;text-transform:uppercase;text-decoration:none">${p.star ? '<span class="star">★</span>' : ''}${esc(p.name)}</button><span class="cm">${POS[p.p1] ? POS[p.p1].n : ''} · ${esc(p.teams.map(m => m.team.name).join(', '))}</span><button class="btn sm x" type="button" data-rmcmp="${p.id}" aria-label="Remove ${esc(p.name)}">✕</button></div>`).join('')}</div>
+    <div class="cmp-cards">${ps.map((p, i) => `<div class="cmp-card"><span class="sw" style="background:${SER[i]}"></span><button class="plink cn" type="button" data-open="${p.id}" style="font-family:var(--f-display);font-size:22px;text-transform:uppercase;text-decoration:none">${p.star ? '<span class="star">★</span>' : ''}${esc(p.name)}</button><span class="cm">OVR ${p.ovr} · ${POS[p.p1] ? POS[p.p1].n : ''} · ${esc(p.teams.map(m => m.team.name).join(', '))}</span><button class="btn sm x" type="button" data-rmcmp="${p.id}" aria-label="Remove ${esc(p.name)}">✕</button></div>`).join('')}</div>
     <div class="cmp-body">
       <div class="card"><h3>Group averages</h3>${legend}<div class="gbars">${gbars}</div></div>
       <div class="card"><h3>Every rating</h3><div class="ctable-wrap"><table class="ctable"><thead><tr><th></th>${ps.map((p, i) => `<th><span class="key" style="background:${SER[i]}"></span>${esc(p.name)}</th>`).join('')}</tr></thead><tbody>${tb}</tbody></table></div>
@@ -1377,10 +1435,10 @@ function renderTeams() {
   const groups = {};
   S.teams.filter(t => t.n).forEach(t => (groups[t.group] = groups[t.group] || []).push(t));
   const empty = S.teams.filter(t => !t.n);
-  const tile = t => `<a class="tile" href="#team-${t.slug}"><span class="tn">${esc(t.name)}</span><span class="tm">${t.n} players${t.stars.length ? ` · <span class="star">★</span>${t.stars.length}` : ''}</span><span class="ts"><span>ATK <b>${r0(t.avg[0])}</b></span><span>DEF <b>${r0(t.avg[1])}</b></span><span>SPD <b>${r0(t.avg[2])}</b></span></span></a>`;
+  const tile = t => `<a class="tile" href="#team-${t.slug}"><span class="tn">${esc(t.name)}</span><span class="tm">${t.n} players${t.stars.length ? ` · <span class="star">★</span>${t.stars.length}` : ''}</span><span class="ts"><span>OVR <b>${r0(t.ovr)}</b></span><span>ATK <b>${r0(t.avg[0])}</b></span><span>DEF <b>${r0(t.avg[1])}</b></span></span></a>`;
   const multi = S.players.filter(p => p.teams.length > 1).length;
   const entries = S.teams.reduce((a, t) => a + t.n, 0);
-  el.innerHTML = `<div class="teams-intro"><h1>Teams</h1><p class="mut" style="margin:0">${S.teams.filter(t => t.n).length} squads with players · tiles show squad averages for Attack, Defence and Speed</p></div>
+  el.innerHTML = `<div class="teams-intro"><h1>Teams</h1><p class="mut" style="margin:0">${S.teams.filter(t => t.n).length} squads with players · tiles show squad averages for Overall, Attack and Defence</p></div>
     ${Object.entries(groups).map(([g, ts]) => `<section class="tgroup"><h2>${esc(g)} <span style="letter-spacing:0;text-transform:none;font-family:var(--f-body);font-weight:400">${ts.length}</span></h2><div class="tiles">${ts.map(tile).join('')}</div></section>`).join('')}
     <section class="datanotes" aria-label="About the data"><h2>About the data</h2><ul>
       <li>Read from the player database inside <code class="inl">data.gob</code> on the Rugby 08 PC disc (2007): ${fmt(entries)} squad entries for ${fmt(S.players.length)} different players in ${S.teams.length} team lists.</li>
@@ -1390,6 +1448,7 @@ function renderTeams() {
       <li>The file's column headings swap the height and weight units. The values are inches/cm and pounds/kg, and are shown that way here.</li>
       <li>“I. Resist” sits among the special skills (“SS I. Resist”) but holds a level from 0 to 3 instead of Yes or No. The file doesn't say what it stands for.</li>
       <li>Group averages (Ball play, Athletic, Contact, Set piece, Mindset) are this site's own grouping of the 23 game ratings, not values from the game.</li>
+      <li>Overall (OVR) is this site's estimate, not a number from the game: a weighted average of the ratings that matter most for each player's main position (for example Scrummaging and Strength for props, Speed and Acceleration for wings). Fitness isn't included. Open any player to see the exact weights.</li>
       ${S.teams.filter(t => t.notes.length).map(t => `<li>${esc(t.name)}: ${t.notes.map(esc).join(' ')}</li>`).join('')}
       <li>${empty.length} team lists in the file have no players: ${empty.map(t => esc(t.name)).join(', ')}.</li>
     </ul></section>`;
@@ -1405,8 +1464,8 @@ function copyText(text, ok) {
 }
 $('#copyclose').addEventListener('click', () => $('#copybox').hidden = true);
 $('#copy-tsv').addEventListener('click', () => {
-  const head = ['ID', 'Name', 'Star', 'Nationality', 'Pos 1', 'Pos 2', 'Pos 3', 'Teams', 'Height (in)', 'Height (cm)', 'Weight (lb)', 'Weight (kg)', ...R.map(r => r.l), ...SS.map(s => s.l), 'I. Resist', 'Head model'];
-  const rows = S.results.map(p => [p.id, p.name, p.star ? 'Yes' : '', p.nat, p.pos[0] || '', p.pos[1] || '', p.pos[2] || '', p.teams.map(m => `${m.team.name} #${m.slot}`).join('; '), p.h[0], p.h[1], p.w[0], p.w[1], ...p.r, ...p.sk.map(b => b ? 'Yes' : 'No'), p.ir, p.head]);
+  const head = ['ID', 'Name', 'Star', 'Nationality', 'Pos 1', 'Pos 2', 'Pos 3', 'Teams', 'Overall (site estimate)', 'Height (in)', 'Height (cm)', 'Weight (lb)', 'Weight (kg)', ...R.map(r => r.l), ...SS.map(s => s.l), 'I. Resist', 'Head model'];
+  const rows = S.results.map(p => [p.id, p.name, p.star ? 'Yes' : '', p.nat, p.pos[0] || '', p.pos[1] || '', p.pos[2] || '', p.teams.map(m => `${m.team.name} #${m.slot}`).join('; '), p.ovr, p.h[0], p.h[1], p.w[0], p.w[1], ...p.r, ...p.sk.map(b => b ? 'Yes' : 'No'), p.ir, p.head]);
   copyText([head, ...rows].map(r => r.join('\t')).join('\n'), `Copied ${fmt(S.results.length)} players. Paste into Excel.`);
 });
 
