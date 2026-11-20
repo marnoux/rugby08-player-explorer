@@ -16,16 +16,16 @@
 'use strict';
 const http = require('http');
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
-const { execFileSync, spawn } = require('child_process');
+const { spawn } = require('child_process');
 const g = require('../tools/gob.js');
+const gf = require('../tools/game-files.js');
 const pocketbase = require('./pocketbase.js');
+const { IS_WIN, hasGob, underProgramFiles, gameRunning, pristine } = gf;
 
 const PB = pocketbase.loadConfig();
 let pbWarning = null;
 
-const IS_WIN = process.platform === 'win32';
 const args = {};
 for (let i = 2; i < process.argv.length; i++) {
   const key = process.argv[i].replace(/^--/, ''), next = process.argv[i + 1];
@@ -33,55 +33,13 @@ for (let i = 2; i < process.argv.length; i++) {
 }
 const PORT = +args.port || 4319;
 
-const hasGob = dir => fs.existsSync(path.join(dir, 'Data', 'data.gob'));
-
-function findGame() {
-  if (args.game) return path.resolve(args.game);
-  if (IS_WIN) {
-    try {
-      const out = execFileSync('reg', ['query', 'HKLM\\SOFTWARE\\WOW6432Node\\EA SPORTS\\EA Sports Rugby 08', '/v', 'Install Dir'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-      const m = /Install Dir\s+REG_SZ\s+(.+)/.exec(out);
-      if (m && hasGob(m[1].trim())) return path.resolve(m[1].trim());
-    } catch {}
-    const def = 'C:\\Program Files (x86)\\EA SPORTS\\EA SPORTS(TM) Rugby 08';
-    return hasGob(def) ? def : null;
-  }
-  // Wine: look for EA SPORTS/<...Rugby 08...>/Data/data.gob under drive_c of the usual prefixes.
-  const home = os.homedir(), prefixes = [process.env.WINEPREFIX, path.join(home, '.wine')];
-  try { for (const d of fs.readdirSync(path.join(home, 'Games'))) prefixes.push(path.join(home, 'Games', d)); } catch {}
-  for (const pre of prefixes.filter(Boolean)) {
-    for (const pf of ['Program Files (x86)', 'Program Files']) {
-      const ea = path.join(pre, 'drive_c', pf, 'EA SPORTS');
-      let dirs = [];
-      try { dirs = fs.readdirSync(ea); } catch { continue; }
-      for (const d of dirs) if (/rugby 08/i.test(d) && hasGob(path.join(ea, d))) return path.join(ea, d);
-    }
-  }
-  return null;
-}
-
-function underProgramFiles(dir) {
-  const pf = [process.env['ProgramFiles(x86)'], process.env.ProgramFiles].filter(Boolean).map(p => p.toLowerCase() + path.sep);
-  return pf.some(p => dir.toLowerCase().startsWith(p));
-}
-
-const GAME = findGame();
+const GAME = gf.findGame(args.game);
 if (!GAME || !hasGob(GAME)) {
   console.error(`Can't find Rugby 08${GAME ? ` in ${GAME}` : ''}. Start the editor with --game "<install folder>", the folder that contains Data/data.gob.`);
   process.exit(1);
 }
-const MODE = args.target ? 'target' : IS_WIN && !args.direct && underProgramFiles(GAME) ? 'virtualstore' : 'direct';
-
-// Each archive the editor writes: `orig` is where the unedited archive is kept, `out` is where the edit goes.
-const LIVE = ['data.gob', path.join('motion', 'data.gob')].map(f => path.join(GAME, 'Data', f)).filter(f => fs.existsSync(f));
-const FILES = LIVE.map(live => {
-  if (MODE === 'direct') return { orig: live + '.original', out: live, backup: true };
-  const base = MODE === 'target' ? path.resolve(args.target) : path.join(process.env.LOCALAPPDATA, 'VirtualStore', GAME.slice(path.parse(GAME).root.length));
-  return { orig: live, out: path.join(base, path.relative(GAME, live)) };
-});
-// Where the unedited archive is right now: in direct mode the live file until the first save makes the backup.
-const pristine = f => (f.backup && !fs.existsSync(f.orig) ? f.out : f.orig);
-const isEdited = () => (FILES[0].backup ? fs.existsSync(FILES[0].orig) : fs.existsSync(FILES[0].out));
+const { MODE, FILES } = gf.buildFiles(GAME, { direct: args.direct, target: args.target });
+const isEdited = () => gf.isEdited(FILES[0]);
 
 const ORIG_GOB = pristine(FILES[0]);
 const ORIG_RDF = g.readEntryFromFile(ORIG_GOB, g.RDF_NAME);
@@ -136,14 +94,6 @@ function state() {
     teamNames: TEAM_NAMES, nationalities: g.NATIONALITIES, positions: g.POSITIONS, ratings: g.RATINGS, skills: g.SKILLS,
     current: pub(db), original: pub(ORIG_DB),
   };
-}
-
-function gameRunning() {
-  try {
-    if (IS_WIN) return /Rugby08\.exe/i.test(execFileSync('tasklist', ['/FI', 'IMAGENAME eq Rugby08.exe', '/NH'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    execFileSync('pgrep', ['-fi', 'rugby08\\.exe'], { stdio: 'ignore' }); // exits 0 only when a match is running
-    return true;
-  } catch { return false; }
 }
 
 // Turns permission errors into advice that fits the save mode.

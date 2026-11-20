@@ -14,73 +14,25 @@
 // --direct and --target match editor/server.js too.
 'use strict';
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
-const { execFileSync } = require('child_process');
 const g = require('./gob.js');
+const gf = require('./game-files.js');
 
-const IS_WIN = process.platform === 'win32';
 const args = {};
 for (let i = 2; i < process.argv.length; i++) {
   const key = process.argv[i].replace(/^--/, ''), next = process.argv[i + 1];
   if (next === undefined || next.startsWith('--')) args[key] = true; else { args[key] = next; i++; }
 }
 
-/* ---------- Find the game (same detection as editor/server.js and tools/export-edits.js) ---------- */
-const hasGob = dir => fs.existsSync(path.join(dir, 'Data', 'data.gob'));
-
-function findGame() {
-  if (args.game) return path.resolve(args.game);
-  if (IS_WIN) {
-    try {
-      const out = execFileSync('reg', ['query', 'HKLM\\SOFTWARE\\WOW6432Node\\EA SPORTS\\EA Sports Rugby 08', '/v', 'Install Dir'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-      const m = /Install Dir\s+REG_SZ\s+(.+)/.exec(out);
-      if (m && hasGob(m[1].trim())) return path.resolve(m[1].trim());
-    } catch {}
-    const def = 'C:\\Program Files (x86)\\EA SPORTS\\EA SPORTS(TM) Rugby 08';
-    return hasGob(def) ? def : null;
-  }
-  const home = os.homedir(), prefixes = [process.env.WINEPREFIX, path.join(home, '.wine')];
-  try { for (const d of fs.readdirSync(path.join(home, 'Games'))) prefixes.push(path.join(home, 'Games', d)); } catch {}
-  for (const pre of prefixes.filter(Boolean)) {
-    for (const pf of ['Program Files (x86)', 'Program Files']) {
-      const ea = path.join(pre, 'drive_c', pf, 'EA SPORTS');
-      let dirs = [];
-      try { dirs = fs.readdirSync(ea); } catch { continue; }
-      for (const d of dirs) if (/rugby 08/i.test(d) && hasGob(path.join(ea, d))) return path.join(ea, d);
-    }
-  }
-  return null;
-}
-
-function underProgramFiles(dir) {
-  const pf = [process.env['ProgramFiles(x86)'], process.env.ProgramFiles].filter(Boolean).map(p => p.toLowerCase() + path.sep);
-  return pf.some(p => dir.toLowerCase().startsWith(p));
-}
-
-function gameRunning() {
-  try {
-    if (IS_WIN) return /Rugby08\.exe/i.test(execFileSync('tasklist', ['/FI', 'IMAGENAME eq Rugby08.exe', '/NH'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    execFileSync('pgrep', ['-fi', 'rugby08\\.exe'], { stdio: 'ignore' });
-    return true;
-  } catch { return false; }
-}
-
-const GAME = findGame();
-if (!GAME || !hasGob(GAME)) {
+const GAME = gf.findGame(args.game);
+if (!GAME || !gf.hasGob(GAME)) {
   console.error(`Can't find Rugby 08${GAME ? ` in ${GAME}` : ''}. Run with --game "<install folder>", the folder that contains Data/data.gob.`);
   process.exit(1);
 }
-if (gameRunning()) { console.error('Rugby 08 is running. Close the game, then run this again.'); process.exit(1); }
+if (gf.gameRunning()) { console.error('Rugby 08 is running. Close the game, then run this again.'); process.exit(1); }
 
-const MODE = args.target ? 'target' : IS_WIN && !args.direct && underProgramFiles(GAME) ? 'virtualstore' : 'direct';
-const live = ['data.gob', path.join('motion', 'data.gob')].map(f => path.join(GAME, 'Data', f)).filter(f => fs.existsSync(f));
-const FILES = live.map(l => {
-  if (MODE === 'direct') return { orig: l + '.original', out: l, backup: true };
-  const base = MODE === 'target' ? path.resolve(args.target) : path.join(process.env.LOCALAPPDATA || '', 'VirtualStore', GAME.slice(path.parse(GAME).root.length));
-  return { orig: l, out: path.join(base, path.relative(GAME, l)) };
-});
-const pristine = f => (f.backup && !fs.existsSync(f.orig) ? f.out : f.orig);
+const { FILES } = gf.buildFiles(GAME, { direct: args.direct, target: args.target });
+const { pristine } = gf;
 
 /* ---------- PocketBase ---------- */
 function pbConfig() {
