@@ -89,10 +89,61 @@ code.inl{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12
 main{max-width:1680px;margin:0 auto}
 .view{padding-block:18px 28px}
 .players-layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:20px;align-items:start}
-.rail{position:sticky;top:calc(var(--hdr) + env(safe-area-inset-top,0px) + 12px);max-height:calc(100dvh - var(--hdr) - 30px);overflow:auto;display:flex;flex-direction:column;gap:18px;padding-right:4px}
-.rail > details > summary{display:none}
-.rail-sec{display:flex;flex-direction:column;gap:8px}
-.rail select,.rail input[type=number]{width:100%;height:36px;border:1px solid var(--line-2);border-radius:6px;background:var(--surface);padding:0 8px;font-size:14px}
+.rail{position:sticky;top:calc(var(--hdr) + env(safe-area-inset-top,0px) + 12px);max-height:calc(100dvh - var(--hdr) - 30px);overflow:auto;display:flex;flex-direction:column;padding-right:4px;overscroll-behavior:contain}
+.rail-head{display:flex;align-items:baseline;gap:10px;padding:2px 0 12px}
+.rail-head h2{font-family:var(--f-display);font-weight:700;font-size:20px;margin:0;flex:1}
+.rail-x,.rail-foot,.toolbar .filters-btn{display:none}
+.rail-body{display:flex;flex-direction:column}
+.fsec{display:flex;flex-direction:column;gap:8px;padding:14px 0;border-top:1px solid var(--line)}
+.fsec:first-child{border-top:0;padding-top:0}
+.fsec h3{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.fhint{margin:-2px 0 0;font-size:12.5px;color:var(--muted)}
+.linkbtn{border:0;background:none;padding:0;cursor:pointer;color:var(--turf);font-size:13px;font-weight:600;font-family:var(--f-body);letter-spacing:0;text-transform:none}
+.linkbtn:hover{text-decoration:underline}
+.rail select,.rail input[type=number],.fsearch{width:100%;height:36px;border:1px solid var(--line-2);border-radius:6px;background:var(--surface);padding:0 8px;font-size:14px}
+.fsearch:focus,.rail select:focus{outline:none;border-color:var(--turf)}
+.checklist{max-height:230px;overflow:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface);padding:4px 0;overscroll-behavior:contain}
+.checklist.short{max-height:200px}
+.checklist .grp{font-family:var(--f-display);font-weight:600;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 10px 2px}
+.opt{display:flex;align-items:center;gap:8px;padding:4px 10px;font-size:13.5px;cursor:pointer;line-height:1.25}
+.opt:hover{background:var(--sunk)}
+.opt input,.check input{accent-color:var(--turf);width:15px;height:15px;margin:0;flex:none}
+.opt .nm{flex:1;min-width:0}
+.cnt{margin-left:auto;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.opt.zero:not(.on){color:var(--muted);opacity:.6}
+.picked{display:flex;flex-wrap:wrap;gap:5px}
+.picked:empty{display:none}
+.pk{display:inline-flex;align-items:center;gap:2px;background:var(--turf);color:var(--turf-ink);border-radius:999px;padding:2px 4px 2px 10px;font-size:12.5px;border:0;cursor:pointer}
+.pk span{font-size:14px;line-height:1;padding:0 4px}
+.check{display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.seg button{border:1px solid var(--line-2);background:var(--surface);border-radius:6px;padding:5px 8px;font-size:13px;cursor:pointer;color:var(--ink-2);display:flex;justify-content:space-between;gap:6px;text-align:left}
+.seg button .cnt{margin-left:0}
+.seg button[aria-checked="true"]{background:var(--turf);border-color:var(--turf);color:var(--turf-ink)}
+.seg button[aria-checked="true"] .cnt{color:inherit;opacity:.8}
+/* Range filter: two native range inputs stacked on one track */
+.rng{padding:4px 0 8px}
+.rng + .rng{border-top:1px dashed var(--line);padding-top:10px}
+.rng-top{display:flex;align-items:center;gap:6px;font-size:13.5px}
+.rng-top .rl{flex:1;font-weight:600;min-width:0}
+.rng-top input[type=number]{width:52px;height:28px;padding:0 4px;text-align:center;font-size:13px;font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.rng-top input::-webkit-inner-spin-button{-webkit-appearance:none}
+.rng-x{border:0;background:none;cursor:pointer;color:var(--muted);width:22px;height:22px;border-radius:50%;flex:none}
+.rng-x:hover{background:var(--sunk);color:var(--ink)}
+.rng-s{position:relative;height:24px;margin:2px 7px 0}
+.rng-s::before{content:"";position:absolute;left:0;right:0;top:10px;height:4px;border-radius:2px;background:var(--line)}
+.rng-s i{position:absolute;top:10px;height:4px;border-radius:2px;background:var(--turf)}
+.rng-s input{position:absolute;left:-7px;width:calc(100% + 14px);top:0;height:24px;margin:0;background:none;pointer-events:none;-webkit-appearance:none;appearance:none}
+.rng-s input::-webkit-slider-thumb{-webkit-appearance:none;pointer-events:auto;width:18px;height:18px;border-radius:50%;background:var(--surface);border:2px solid var(--turf);cursor:grab;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.rng-s input::-moz-range-thumb{pointer-events:auto;width:14px;height:14px;border-radius:50%;background:var(--surface);border:2px solid var(--turf);cursor:grab}
+.rng-s input::-moz-range-track{background:none}
+.rng-s input:focus-visible::-webkit-slider-thumb{outline:2px solid var(--turf);outline-offset:2px}
+.rng.off .rng-s i{background:var(--line-2)}
+.sortbox{display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--ink-2)}
+.sortbox select{height:28px;border:1px solid var(--line-2);border-radius:6px;background:var(--surface);padding:0 6px;font-size:13.5px;max-width:200px}
+.sortbox .btn{min-width:0}
+.filters-btn .badge{display:inline-block;min-width:18px;margin-left:2px;padding:0 5px;border-radius:9px;background:var(--turf);color:var(--turf-ink);font-size:12px;text-align:center}
+.clearall{border:0;background:none;cursor:pointer;color:var(--turf);font-weight:600;font-size:13px;padding:2px 4px}
 .chipgrid{display:flex;flex-wrap:wrap;gap:5px}
 .chip{border:1px solid var(--line-2);background:var(--surface);border-radius:6px;padding:4px 8px;font-size:13px;cursor:pointer;color:var(--ink-2);display:inline-flex;gap:5px;align-items:baseline}
 .chip .n{font-family:var(--f-display);font-weight:600;color:var(--muted);font-size:12px}
@@ -324,15 +375,24 @@ button.tag:hover{border-color:var(--turf)}
 }
 @media (max-width:860px){
   .players-layout{grid-template-columns:minmax(0,1fr)}
-  .rail{position:static;max-height:none;overflow:visible;padding:0}
-  .rail > details{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:10px 14px}
-  .rail > details > summary{display:list-item;cursor:pointer;font-weight:600}
-  .rail > details[open] > .rail-body{margin-top:12px}
+  .rail{position:fixed;inset:0;z-index:70;max-height:none;background:var(--paper);padding:0;display:none}
+  .rail.open{display:flex}
+  .rail-head{position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--line);padding:calc(12px + env(safe-area-inset-top,0px)) 16px 12px;z-index:1;align-items:center}
+  .rail-x{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line-2);background:var(--surface);border-radius:8px;width:36px;height:36px;cursor:pointer;font-size:16px}
+  .rail-body{flex:1;overflow:auto;padding:14px 16px}
+  .rail-foot{display:block;position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+  .rail-foot .btn{width:100%;height:44px;justify-content:center;font-size:15px}
+  .checklist{max-height:260px}
+  .toolbar .filters-btn{display:inline-flex}
+  .sortbox{order:1;flex-basis:100%}
+  .colt,.legend-heat,#copy-tsv{order:2}
+  .sortbox select{flex:1;max-width:none;height:34px}
+  .sortbox .btn{height:34px}
+  .toolbar .spacer{display:none}
   .search{flex-basis:100%;order:5}
   .tabs{margin-left:auto}
   .tablebox{max-height:72dvh}
 }
-.rail-body{display:flex;flex-direction:column;gap:18px}
 @media (max-width:640px){
   .tc-grid{grid-template-columns:1fr}
   .depth{grid-template-columns:1fr}
@@ -378,54 +438,65 @@ button.tag:hover{border-color:var(--turf)}
   <section class="view" id="view-players" hidden>
     <div id="teamcard"></div>
     <div class="players-layout">
-      <aside class="rail" aria-label="Filters">
-        <details id="rail-details" open>
-          <summary>Filters and search help</summary>
-          <div class="rail-body">
-            <div class="rail-sec">
-              <p class="eyebrow">Quick picks</p>
-              <div class="presets" id="presets"></div>
-            </div>
-            <div class="rail-sec">
-              <label class="eyebrow" for="f-team">Team</label>
-              <select id="f-team"></select>
-            </div>
-            <div class="rail-sec">
-              <p class="eyebrow">Position <span class="mut" style="text-transform:none;letter-spacing:0;font-family:var(--f-body)">any listed</span></p>
-              <div class="chipgrid" id="f-pos"></div>
-            </div>
-            <div class="rail-sec">
-              <label class="eyebrow" for="f-nat">Nationality</label>
-              <select id="f-nat"></select>
-            </div>
-            <div class="rail-sec">
-              <p class="eyebrow">Special skills</p>
-              <div class="chipgrid" id="f-skill"></div>
-            </div>
-            <div class="rail-sec">
-              <p class="eyebrow">Flags</p>
-              <div class="chipgrid" id="f-flags"></div>
-            </div>
-            <div class="rail-sec">
-              <p class="eyebrow">Rating filter</p>
-              <div class="rb">
-                <select id="rb-f" aria-label="Rating"></select>
-                <select id="rb-op" aria-label="Comparison"><option value=">=">at least</option><option value="<=">at most</option></select>
-                <input id="rb-v" type="number" min="0" max="250" value="85" aria-label="Value">
-              </div>
-              <button class="btn sm" id="rb-add" type="button">Add to search</button>
-            </div>
-            <details class="syntax rail-sec" id="syntax">
-              <summary>Search syntax</summary>
-              <dl id="syntax-list"></dl>
-            </details>
-          </div>
-        </details>
+      <aside class="rail" id="rail" aria-label="Filters">
+        <div class="rail-head">
+          <h2>Filters</h2>
+          <button class="linkbtn" id="f-clear" type="button" hidden>Clear all</button>
+          <button class="rail-x" id="rail-close" type="button" aria-label="Close filters">✕</button>
+        </div>
+        <div class="rail-body">
+          <section class="fsec">
+            <h3 class="eyebrow">Quick picks</h3>
+            <div class="presets" id="presets"></div>
+          </section>
+          <section class="fsec" id="sec-team">
+            <h3 class="eyebrow"><span>Team</span><button class="linkbtn" type="button" data-reset="team" hidden>Reset</button></h3>
+            <div class="picked" id="f-team-picked"></div>
+            <input class="fsearch" id="f-team-q" type="search" placeholder="Find a team" aria-label="Find a team" autocomplete="off">
+            <div class="checklist" id="f-team" role="group" aria-label="Teams"></div>
+          </section>
+          <section class="fsec" id="sec-pos">
+            <h3 class="eyebrow"><span>Position</span><button class="linkbtn" type="button" data-reset="pos" hidden>Reset</button></h3>
+            <div class="chipgrid" id="f-pos"></div>
+            <div class="chipgrid"><button type="button" class="chip" data-unit="f">All forwards</button><button type="button" class="chip" data-unit="b">All backs</button></div>
+            <label class="check"><input type="checkbox" id="f-main"> Main position only</label>
+          </section>
+          <section class="fsec" id="sec-nat">
+            <h3 class="eyebrow"><span>Nationality</span><button class="linkbtn" type="button" data-reset="nat" hidden>Reset</button></h3>
+            <div class="checklist short" id="f-nat" role="group" aria-label="Nationalities"></div>
+          </section>
+          <section class="fsec" id="sec-range">
+            <h3 class="eyebrow"><span>Ratings and build</span><button class="linkbtn" type="button" data-reset="range" hidden>Reset</button></h3>
+            <div id="f-ranges"></div>
+            <select id="f-addrange" aria-label="Add a rating filter"></select>
+          </section>
+          <section class="fsec" id="sec-skill">
+            <h3 class="eyebrow"><span>Special skills</span><button class="linkbtn" type="button" data-reset="skill" hidden>Reset</button></h3>
+            <p class="fhint">Players must have every skill you pick.</p>
+            <div class="chipgrid" id="f-skill"></div>
+          </section>
+          <section class="fsec" id="sec-squad">
+            <h3 class="eyebrow"><span>Squad</span><button class="linkbtn" type="button" data-reset="squad" hidden>Reset</button></h3>
+            <div class="seg" id="f-squad" role="radiogroup" aria-label="Squad"></div>
+            <label class="check"><input type="checkbox" id="f-star"> <span><span class="star">★</span> Star players only</span><span class="cnt" id="f-star-n"></span></label>
+          </section>
+          <details class="syntax fsec" id="syntax">
+            <summary>Typing filters in the search box</summary>
+            <p class="fhint">Everything here also works typed into the search box, and adds to the filters above.</p>
+            <dl id="syntax-list"></dl>
+          </details>
+        </div>
+        <div class="rail-foot"><button class="btn primary" id="rail-done" type="button">Show players</button></div>
       </aside>
       <div class="results">
         <div class="toolbar">
+          <button class="btn filters-btn" id="filters-open" type="button" aria-controls="rail"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filters<span class="badge" id="filters-n" hidden></span></button>
           <div class="count" id="count"></div>
-          <div class="mut" id="sortlabel" style="font-size:13px"></div>
+          <div class="sortbox">
+            <label for="sort-key">Sort by</label>
+            <select id="sort-key"></select>
+            <button class="btn sm" id="sort-dir" type="button"></button>
+          </div>
           <div class="spacer"></div>
           <div class="colt" id="colt" aria-label="Column groups"></div>
           <div class="legend-heat" title="Rating cells are shaded from 40 (no shade) to 100 (darkest)"><span>40</span><i></i><span>100</span></div>
@@ -547,17 +618,18 @@ const DEPTH = [
   {l:'Forwards', pos:[0,1,2,3,4,5,6]},
   {l:'Backs', pos:[7,8,9,10,11]},
 ];
+// Quick picks set the filters (null in a range means the end of the scale) and the sort.
 const PRESETS = [
-  {l:'Springboks', q:'team:south-africa', s:['squad', 1]},
-  {l:'All South Africans', q:'nat:south-african', s:['squad', 1]},
-  {l:'Star players', q:'is:star', s:['squad', 1]},
-  {l:'Highest rated', q:'', s:['ovr', -1]},
-  {l:'Fastest', q:'', s:['r2', -1]},
-  {l:'Goal kickers', q:'skill:goalkicker', s:['r8', -1]},
-  {l:'Line-out jumpers', q:'skill:jump', s:['r14', -1]},
-  {l:'Heaviest', q:'', s:['weight', -1]},
-  {l:'Small and fast', q:'height<178 speed>=88', s:['r2', -1]},
-  {l:'Club and country', q:'is:multi', s:['name', 1]},
+  {l:'Springboks', f:{team:['south-africa']}, s:['squad', 1]},
+  {l:'All South Africans', f:{nat:['South African']}, s:['ovr', -1]},
+  {l:'Star players', f:{star:true}, s:['ovr', -1]},
+  {l:'Highest rated', f:{}, s:['ovr', -1]},
+  {l:'Fastest', f:{}, s:['r2', -1]},
+  {l:'Goal kickers', f:{skill:['goalkicker']}, s:['r8', -1]},
+  {l:'Line-out jumpers', f:{skill:['jump']}, s:['r14', -1]},
+  {l:'Heaviest', f:{}, s:['weight', -1]},
+  {l:'Small and fast', f:{range:{height:[null, 177], r2:[88, null]}}, s:['r2', -1]},
+  {l:'Club and country', f:{squad:'multi'}, s:['name', 1]},
 ];
 const SYNTAX = [
   ['habana', 'Any text: name, team, nationality or position'],
@@ -610,7 +682,41 @@ const S = {
   cols: new Set(store.get('r08.cols', ['ballplay','athletic','contact','setpiece','mindset','skills'])),
   compare: store.get('r08.compare', []),
   cohort: {}, dbAvg: [], dbGroupAvg: [], heads: {}, simSamePos: false,
+  f: null, rangeRows: [], textPass: [],
 };
+// Filters set from the rail. Text typed in the search box is parsed separately and applies on top.
+const emptyF = () => ({team: new Set(), pos: new Set(), main: false, nat: new Set(), skill: new Set(), squad: '', star: false, range: {}});
+const DEFAULT_RANGES = ['ovr', 'height', 'weight'];
+S.f = emptyF(); S.rangeRows = [...DEFAULT_RANGES];
+// Every sortable or range-filterable number, keyed the same way as the sort keys.
+const RANGE = {};
+function buildRanges() {
+  const add = (k, l, get) => {
+    let lo = Infinity, hi = -Infinity;
+    for (const p of S.players) { const v = get(p); if (v < lo) lo = v; if (v > hi) hi = v; }
+    RANGE[k] = {k, l, get, min: Math.floor(lo), max: Math.ceil(hi)};
+  };
+  add('ovr', 'Overall', p => p.ovr);
+  add('height', 'Height (cm)', p => p.h[1]);
+  add('weight', 'Weight (kg)', p => p.w[1]);
+  R.forEach((r, i) => add('r' + i, r.l, p => p.r[i]));
+  GROUPS.forEach((g, gi) => add('g' + gi, g.l + ' average', p => p.g[gi]));
+  add('skills', 'Number of special skills', p => p.nSkills);
+  add('resist', 'I. Resist', p => p.ir);
+}
+// Whether p passes the rail filters, leaving out one group (`ex`) so its options can show how many they'd match.
+function matchF(p, ex) {
+  const f = S.f;
+  if (ex !== 'team' && f.team.size && !p.teams.some(m => f.team.has(m.team.slug))) return false;
+  if (ex !== 'pos' && f.pos.size && !(f.main ? f.pos.has(p.p1) : p.posIdx.some(i => f.pos.has(i)))) return false;
+  if (ex !== 'nat' && f.nat.size && !f.nat.has(p.nat)) return false;
+  if (ex !== 'skill') for (const i of f.skill) if (!p.sk[i]) return false;
+  if (ex !== 'squad' && f.squad && !(f.squad === 'in' ? p.teams.length > 0 : f.squad === 'multi' ? p.teams.length > 1 : !p.teams.length)) return false;
+  if (ex !== 'star' && f.star && !p.star) return false;
+  for (const k in f.range) { if (k === ex) continue; const [lo, hi] = f.range[k], v = RANGE[k].get(p); if (v < lo || v > hi) return false; }
+  return true;
+}
+const fActive = () => { const f = S.f; return f.team.size + (f.pos.size ? 1 : 0) + f.nat.size + f.skill.size + (f.squad ? 1 : 0) + (f.star ? 1 : 0) + Object.keys(f.range).length; };
 
 /* ---------- Data prep ---------- */
 function prepare(players, teams) {
@@ -862,9 +968,12 @@ let parsed = {toks: [], filters: [], errors: []};
 function update() {
   parsed = parseQuery(qEl.value);
   const fs = parsed.filters;
-  S.results = S.players.filter(p => fs.every(f => f.neg ? !f.test(p) : f.test(p)));
-  const teamFs = fs.filter(f => f.teams && !f.neg);
-  S.singleTeam = teamFs.length === 1 && teamFs[0].teams.length === 1 ? teamFs[0].teams[0] : null;
+  S.textPass = S.players.filter(p => fs.every(f => f.neg ? !f.test(p) : f.test(p)));
+  S.results = S.textPass.filter(p => matchF(p));
+  // One team picked (in the rail or typed): number rows by squad slot and show the team card.
+  const cand = fs.filter(f => f.teams && !f.neg).map(f => (f.teams.length === 1 ? f.teams[0] : null));
+  if (S.f.team.size) cand.push(S.f.team.size === 1 ? S.teamBySlug[[...S.f.team][0]] : null);
+  S.singleTeam = cand.length && cand.every(t => t && t === cand[0]) ? cand[0] : null;
   sortResults();
   $('#clear-q').hidden = !qEl.value.trim();
   renderExplain(); renderTeamCard(); renderTable(); syncRail();
@@ -907,14 +1016,51 @@ function sortName(key) {
 }
 
 /* ---------- Explain chips ---------- */
+function rangeLabel(k) {
+  const R0 = RANGE[k], [lo, hi] = S.f.range[k];
+  return `${R0.l} ${lo <= R0.min ? `≤ ${hi}` : hi >= R0.max ? `≥ ${lo}` : `${lo}–${hi}`}`;
+}
+// Chips for every active filter (rail and typed), each removable, plus Clear all.
+function fChips() {
+  const f = S.f, out = [];
+  f.team.forEach(slug => out.push([`team:${slug}`, S.teamBySlug[slug] ? S.teamBySlug[slug].name : slug]));
+  if (f.pos.size) out.push(['pos', `${f.main ? 'Main position' : 'Position'}: ${[...f.pos].sort((a, b) => a - b).map(i => POS[i].n).join(' or ')}`]);
+  f.nat.forEach(n => out.push([`nat:${n}`, n]));
+  f.skill.forEach(i => out.push([`skill:${i}`, `Skill: ${SS[i].l}`]));
+  if (f.squad) out.push(['squad', SQUAD_OPTS.find(o => o[0] === f.squad)[1]]);
+  if (f.star) out.push(['star', 'Star players']);
+  Object.keys(f.range).forEach(k => out.push([`range:${k}`, rangeLabel(k)]));
+  return out;
+}
 function renderExplain() {
   const el = $('#explain');
-  const parts = parsed.filters.map(f => `<span class="qchip${f.neg ? ' neg' : ''}"><span>${f.neg ? 'Not ' : ''}${esc(f.label)}</span><button type="button" data-rm="${f.ti}" aria-label="Remove ${esc(f.label)}">×</button></span>`);
+  const parts = fChips().map(([id, l]) => `<span class="qchip"><span>${esc(l)}</span><button type="button" data-rmf="${esc(id)}" aria-label="Remove ${esc(l)}">×</button></span>`);
+  parts.push(...parsed.filters.map(f => `<span class="qchip${f.neg ? ' neg' : ''}"><span>${f.neg ? 'Not ' : ''}${esc(f.label)}</span><button type="button" data-rm="${f.ti}" aria-label="Remove ${esc(f.label)}">×</button></span>`));
   parsed.errors.forEach(e => parts.push(`<span class="qchip neg"><span class="qerr">${esc(e.msg)}</span><button type="button" data-rm="${e.ti}" aria-label="Remove this part of the search">×</button></span>`));
-  if (!parts.length) parts.push(`<span class="mut">Showing all ${fmt(S.players.length)} players. Type a name, or filter with things like <code class="inl">speed&gt;90</code> or <code class="inl">pos:wing</code>.</span>`);
+  if (parts.length > 1) parts.push(`<button class="clearall" type="button" data-clearall>Clear all</button>`);
+  if (!parts.length) parts.push(`<span class="mut">Showing all ${fmt(S.players.length)} players. Type a name to search, or use the filters.</span>`);
   el.innerHTML = parts.join('');
 }
-$('#explain').addEventListener('click', e => { const b = e.target.closest('[data-rm]'); if (b) removeToken(+b.dataset.rm); });
+function removeF(id) {
+  const [kind, v] = id.split(/:(.*)/s), f = S.f;
+  if (kind === 'team') f.team.delete(v);
+  else if (kind === 'pos') { f.pos.clear(); f.main = false; }
+  else if (kind === 'nat') f.nat.delete(v);
+  else if (kind === 'skill') f.skill.delete(+v);
+  else if (kind === 'squad') f.squad = '';
+  else if (kind === 'star') f.star = false;
+  else if (kind === 'range') { delete f.range[v]; syncRangeRow(v); }
+  update();
+}
+function clearAll() {
+  S.f = emptyF(); S.rangeRows = [...DEFAULT_RANGES]; qEl.value = '';
+  renderRanges(); update();
+}
+$('#explain').addEventListener('click', e => {
+  const b = e.target.closest('[data-rm]'); if (b) return removeToken(+b.dataset.rm);
+  const f = e.target.closest('[data-rmf]'); if (f) return removeF(f.dataset.rmf);
+  if (e.target.closest('[data-clearall]')) clearAll();
+});
 
 /* ---------- Table ---------- */
 const CHUNK = 120;
@@ -967,10 +1113,10 @@ function renderTable() {
   renderHead();
   const tb = $('#tbody'), n = S.results.length;
   $('#count').innerHTML = `<b>${fmt(n)}</b> ${n === S.players.length ? 'players' : `of ${fmt(S.players.length)} players`}`;
-  $('#sortlabel').textContent = `Sorted by ${sortName(S.sort.key)}${['squad','name','team','pos'].includes(S.sort.key) ? (S.sort.dir < 0 ? ', reversed' : '') : (S.sort.dir < 0 ? ', highest first' : ', lowest first')}`;
+  syncSort();
   if (!n) {
     const cols = 7 + columns().length + (S.cols.has('skills') ? 2 : 0);
-    tb.innerHTML = `<tr><td colspan="${cols}" style="text-align:left;height:auto"><div class="empty"><h3>No players match</h3><p>Remove a filter above, or clear the search to see all ${fmt(S.players.length)} players.</p><button class="btn" type="button" data-clear>Clear search</button></div></td></tr>`;
+    tb.innerHTML = `<tr><td colspan="${cols}" style="text-align:left;height:auto"><div class="empty"><h3>No players match</h3><p>Remove a filter above, or clear them all to see every one of the ${fmt(S.players.length)} players.</p><button class="btn" type="button" data-clear>Clear all filters</button></div></td></tr>`;
     S.rendered = 0; return;
   }
   S.rendered = 0; tb.innerHTML = '';
@@ -992,12 +1138,10 @@ function renderMore() {
 $('#thead').addEventListener('click', e => {
   const t = e.target.closest('[data-sort]'); if (!t) return;
   const key = t.dataset.sort;
-  if (S.sort.key === key) S.sort.dir *= -1;
-  else S.sort = {key, dir: ['squad','name','team','pos'].includes(key) ? 1 : -1};
-  sortResults(); renderTable();
+  setSort(key, S.sort.key === key ? -S.sort.dir : undefined);
 });
 $('#tbody').addEventListener('click', e => {
-  if (e.target.closest('[data-clear]')) { setQuery(''); qEl.focus(); return; }
+  if (e.target.closest('[data-clear]')) { clearAll(); return; }
   const tr = e.target.closest('tr[data-id]'); if (tr) openPlayerHash(tr.dataset.id);
 });
 $('#tbody').addEventListener('keydown', e => {
@@ -1022,50 +1166,219 @@ $('#colt').addEventListener('click', e => {
   store.set('r08.cols', [...S.cols]); renderColToggles(); renderTable();
 });
 
-/* ---------- Rail ---------- */
+/* ---------- Sorting control ---------- */
+const TEXT_SORT = ['squad', 'name', 'team', 'pos'];
+function buildSort() {
+  const o = (k, l) => `<option value="${k}">${esc(l)}</option>`;
+  $('#sort-key').innerHTML = o('squad', 'Team and squad number') + o('ovr', 'Overall') + o('name', 'Surname') + o('team', 'Team name') + o('pos', 'Position')
+    + `<optgroup label="Build">${o('height', 'Height')}${o('weight', 'Weight')}</optgroup>`
+    + GROUPS.map(g => `<optgroup label="${esc(g.l)}">${g.idx.map(i => o('r' + i, R[i].l)).join('')}</optgroup>`).join('')
+    + `<optgroup label="Group averages">${GROUPS.map((g, gi) => o('g' + gi, g.l + ' average')).join('')}</optgroup>`
+    + `<optgroup label="Other">${o('skills', 'Number of special skills')}${o('resist', 'I. Resist')}</optgroup>`;
+}
+function dirLabel(key, dir) {
+  if (key === 'squad') return dir > 0 ? '↓ First to last' : '↑ Last to first';
+  if (TEXT_SORT.includes(key)) return dir > 0 ? '↓ A to Z' : '↑ Z to A';
+  return dir < 0 ? '↓ Highest first' : '↑ Lowest first';
+}
+function syncSort() {
+  const k = $('#sort-key');
+  if (![...k.options].some(o => o.value === S.sort.key)) k.insertAdjacentHTML('beforeend', `<option value="${S.sort.key}">${esc(sortName(S.sort.key))}</option>`);
+  k.value = S.sort.key;
+  const b = $('#sort-dir');
+  b.textContent = dirLabel(S.sort.key, S.sort.dir);
+  b.setAttribute('aria-label', `Sort direction: ${b.textContent.slice(2)}. Click to reverse.`);
+}
+// Sorts by key; dir defaults to A-Z for names and highest first for numbers. Shows the sorted rating's column group.
+function setSort(key, dir) {
+  S.sort = {key, dir: dir || (TEXT_SORT.includes(key) ? 1 : -1)};
+  const m = /^r(\d+)$/.exec(key);
+  if (m) { const g = GROUPS.find(g => g.idx.includes(+m[1])); if (g && !S.cols.has(g.k)) { S.cols.add(g.k); renderColToggles(); } }
+  sortResults(); renderTable();
+}
+$('#sort-key').addEventListener('change', e => setSort(e.target.value));
+$('#sort-dir').addEventListener('click', () => setSort(S.sort.key, -S.sort.dir));
+
+/* ---------- Filter rail ---------- */
+const SQUAD_OPTS = [['', 'Any'], ['in', 'In a squad'], ['multi', 'Club and country'], ['free', 'In no squad']];
+const cntHTML = n => `<span class="cnt">${fmt(n)}</span>`;
 function buildRail() {
+  $('#presets').innerHTML = PRESETS.map((p, i) => `<button type="button" class="preset" data-preset="${i}">${p.l}</button>`).join('');
   const groups = {};
   S.teams.filter(t => t.n).forEach(t => (groups[t.group] = groups[t.group] || []).push(t));
-  $('#f-team').innerHTML = `<option value="">All teams</option>` + Object.entries(groups).map(([g, ts]) =>
-    `<optgroup label="${esc(g)}">${ts.map(t => `<option value="${t.slug}">${esc(t.name)} (${t.n})</option>`).join('')}</optgroup>`).join('');
-  $('#f-nat').innerHTML = `<option value="">Any nationality</option>` + S.nats.map(([n, c]) => `<option value="${slugify(n)}">${esc(n)} (${c})</option>`).join('');
-  $('#f-pos').innerHTML = POS.map(p => `<button type="button" class="chip" data-pos="${p.a.toLowerCase()}" title="${p.n}" aria-pressed="false"><span class="n">${p.no}</span>${p.a}</button>`).join('');
-  $('#f-skill').innerHTML = SS.map(s => `<button type="button" class="chip" data-skill="${s.k}" title="Game label: ${esc(s.g)}" aria-pressed="false">${s.l}</button>`).join('');
-  $('#f-flags').innerHTML = `<button type="button" class="chip" data-flag="is:star" aria-pressed="false">★ Star players</button><button type="button" class="chip" data-flag="is:multi" aria-pressed="false">Club and country</button>${S.free ? `<button type="button" class="chip" data-flag="is:free" aria-pressed="false">In no squad (${fmt(S.free)})</button>` : ''}`;
-  const opts = `<option value="ovr">Overall (site estimate)</option>` + R.map((r, i) => `<option value="${r.k}">${r.l}</option>`).join('')
-    + `<optgroup label="Group averages">${GROUPS.map(g => `<option value="${g.k}">${g.l}</option>`).join('')}</optgroup>`
-    + `<optgroup label="Build"><option value="height">Height (cm)</option><option value="weight">Weight (kg)</option></optgroup>`
-    + `<optgroup label="Other"><option value="skills">Number of special skills</option><option value="resist">I. Resist (0–3)</option></optgroup>`;
-  $('#rb-f').innerHTML = opts; $('#rb-f').value = 'ovr';
-  $('#presets').innerHTML = PRESETS.map((p, i) => `<button type="button" class="preset" data-preset="${i}">${p.l}</button>`).join('');
+  $('#f-team').innerHTML = Object.entries(groups).map(([g, ts]) => `<div class="grp">${esc(g)}</div>`
+    + ts.map(t => `<label class="opt" data-team="${t.slug}" data-n="${esc(t.nameN)}"><input type="checkbox" value="${t.slug}"><span class="nm">${esc(t.name)}</span><span class="cnt"></span></label>`).join('')).join('');
+  $('#f-nat').innerHTML = S.nats.map(([n]) => `<label class="opt" data-nat="${esc(n)}"><input type="checkbox" value="${esc(n)}"><span class="nm">${esc(n)}</span><span class="cnt"></span></label>`).join('');
+  $('#f-pos').innerHTML = POS.map((p, i) => `<button type="button" class="chip" data-pos="${i}" title="${p.n}" aria-pressed="false"><span class="n">${p.no}</span>${p.a}</button>`).join('');
+  $('#f-skill').innerHTML = SS.map((s, i) => `<button type="button" class="chip" data-skill="${i}" title="Game label: ${esc(s.g)}" aria-pressed="false">${s.l}<span class="cnt"></span></button>`).join('');
+  $('#f-squad').innerHTML = SQUAD_OPTS.map(([v, l]) => `<button type="button" role="radio" data-squad="${v}" aria-checked="false"><span>${l}</span><span class="cnt"></span></button>`).join('');
   $('#syntax-list').innerHTML = SYNTAX.map(([q, d]) => `<dt><button type="button" data-q="${esc(q)}">${esc(q)}</button></dt><dd>${esc(d)}</dd>`).join('');
+  renderRanges();
 }
+// Counts beside each option: how many players it would show, given every other filter.
 function syncRail() {
-  const teamVals = listValues('team');
-  const ft = $('#f-team'); ft.value = teamVals.length === 1 && S.teamBySlug[teamVals[0]] ? teamVals[0] : '';
-  const natVals = listValues('nat'); const fn = $('#f-nat');
-  fn.value = natVals.length === 1 && [...fn.options].some(o => o.value === natVals[0]) ? natVals[0] : '';
-  const pv = listValues('pos');
-  document.querySelectorAll('#f-pos [data-pos]').forEach(b => b.setAttribute('aria-pressed', pv.includes(b.dataset.pos)));
-  const sv = tokenize(qEl.value).filter(t => /^skill[:=]/i.test(t.text)).flatMap(t => t.text.slice(6).toLowerCase().split(','));
-  document.querySelectorAll('#f-skill [data-skill]').forEach(b => b.setAttribute('aria-pressed', sv.includes(b.dataset.skill)));
-  document.querySelectorAll('#f-flags [data-flag]').forEach(b => b.setAttribute('aria-pressed', hasToken(b.dataset.flag)));
+  const f = S.f, base = ex => S.textPass.filter(p => matchF(p, ex));
+  const tc = {}; for (const p of base('team')) for (const m of p.teams) tc[m.team.slug] = (tc[m.team.slug] || 0) + 1;
+  document.querySelectorAll('#f-team .opt').forEach(o => {
+    const on = f.team.has(o.dataset.team), n = tc[o.dataset.team] || 0;
+    o.querySelector('input').checked = on; o.classList.toggle('on', on); o.classList.toggle('zero', !n); o.querySelector('.cnt').textContent = fmt(n);
+  });
+  $('#f-team-picked').innerHTML = [...f.team].map(slug => `<button type="button" class="pk" data-unteam="${slug}" aria-label="Remove ${esc(S.teamBySlug[slug].name)}">${esc(S.teamBySlug[slug].name)}<span aria-hidden="true">×</span></button>`).join('');
+  const nc = {}; for (const p of base('nat')) nc[p.nat] = (nc[p.nat] || 0) + 1;
+  document.querySelectorAll('#f-nat .opt').forEach(o => {
+    const on = f.nat.has(o.dataset.nat), n = nc[o.dataset.nat] || 0;
+    o.querySelector('input').checked = on; o.classList.toggle('on', on); o.classList.toggle('zero', !n); o.querySelector('.cnt').textContent = fmt(n);
+  });
+  document.querySelectorAll('#f-pos [data-pos]').forEach(b => b.setAttribute('aria-pressed', f.pos.has(+b.dataset.pos)));
+  document.querySelectorAll('[data-unit]').forEach(b => {
+    const set = POS.map((p, i) => (p.u === b.dataset.unit ? i : -1)).filter(i => i >= 0);
+    b.setAttribute('aria-pressed', f.pos.size === set.length && set.every(i => f.pos.has(i)));
+  });
+  $('#f-main').checked = f.main;
+  document.querySelectorAll('#f-skill [data-skill]').forEach(b => {
+    const i = +b.dataset.skill, on = f.skill.has(i);
+    b.setAttribute('aria-pressed', on);
+    b.querySelector('.cnt').textContent = on ? '' : fmt(S.results.filter(p => p.sk[i]).length);
+  });
+  const sq = base('squad'), sc = {'': sq.length, in: 0, multi: 0, free: 0};
+  for (const p of sq) { if (p.teams.length) sc.in++; else sc.free++; if (p.teams.length > 1) sc.multi++; }
+  document.querySelectorAll('#f-squad [data-squad]').forEach(b => { b.setAttribute('aria-checked', f.squad === b.dataset.squad); b.querySelector('.cnt').textContent = fmt(sc[b.dataset.squad]); });
+  if (!S.free) $('#f-squad [data-squad="free"]').hidden = true;
+  $('#f-star').checked = f.star;
+  $('#f-star-n').textContent = fmt(base('star').filter(p => p.star).length);
+  // Reset links per section, Clear all, and the phone's Filters button and "Show N players".
+  const act = {team: f.team.size, pos: f.pos.size || f.main, nat: f.nat.size, range: Object.keys(f.range).length, skill: f.skill.size, squad: f.squad || f.star};
+  document.querySelectorAll('[data-reset]').forEach(b => b.hidden = !act[b.dataset.reset]);
+  const n = fActive() + parsed.filters.length;
+  $('#f-clear').hidden = !n;
+  $('#filters-n').hidden = !n; $('#filters-n').textContent = n;
+  $('#rail-done').textContent = `Show ${fmt(S.results.length)} player${S.results.length === 1 ? '' : 's'}`;
 }
-$('#f-team').addEventListener('change', e => { setKey('team', e.target.value); S.sort = {key: 'squad', dir: 1}; sortResults(); renderTable(); });
-$('#f-nat').addEventListener('change', e => setKey('nat', e.target.value));
-$('#f-pos').addEventListener('click', e => { const b = e.target.closest('[data-pos]'); if (b) toggleListValue('pos', b.dataset.pos); });
-$('#f-skill').addEventListener('click', e => { const b = e.target.closest('[data-skill]'); if (b) toggleToken('skill:' + b.dataset.skill); });
-$('#f-flags').addEventListener('click', e => { const b = e.target.closest('[data-flag]'); if (b) toggleToken(b.dataset.flag); });
-$('#rb-add').addEventListener('click', () => {
-  const v = $('#rb-v').value; if (v === '') return;
-  const q = qEl.value.trim(); setQuery(`${q} ${$('#rb-f').value}${$('#rb-op').value}${v}`);
+// Range rows: Overall, height and weight always, plus any rating added from the menu.
+function renderRanges() {
+  $('#f-ranges').innerHTML = S.rangeRows.map(k => {
+    const R0 = RANGE[k], [lo, hi] = S.f.range[k] || [R0.min, R0.max];
+    const attrs = `min="${R0.min}" max="${R0.max}" step="1"`;
+    return `<div class="rng${S.f.range[k] ? '' : ' off'}" data-k="${k}">
+      <div class="rng-top"><span class="rl">${esc(R0.l)}</span><input type="number" class="lo" ${attrs} value="${lo}" aria-label="${esc(R0.l)}, lowest"><span class="mut">–</span><input type="number" class="hi" ${attrs} value="${hi}" aria-label="${esc(R0.l)}, highest">${DEFAULT_RANGES.includes(k) ? '' : `<button type="button" class="rng-x" data-rmrange="${k}" aria-label="Remove the ${esc(R0.l)} filter">✕</button>`}</div>
+      <div class="rng-s"><i></i><input type="range" class="lo" ${attrs} value="${lo}" aria-label="${esc(R0.l)}, lowest"><input type="range" class="hi" ${attrs} value="${hi}" aria-label="${esc(R0.l)}, highest"></div>
+    </div>`;
+  }).join('');
+  S.rangeRows.forEach(syncRangeRow);
+  const add = (k) => S.rangeRows.includes(k) ? '' : `<option value="${k}">${esc(RANGE[k].l)}</option>`;
+  $('#f-addrange').innerHTML = `<option value="">+ Add a rating filter…</option>`
+    + GROUPS.map(g => `<optgroup label="${esc(g.l)}">${g.idx.map(i => add('r' + i)).join('')}</optgroup>`).join('')
+    + `<optgroup label="Group averages">${GROUPS.map((g, gi) => add('g' + gi)).join('')}</optgroup>`
+    + `<optgroup label="Other">${add('skills')}${add('resist')}</optgroup>`;
+}
+function syncRangeRow(k) {
+  const row = document.querySelector(`.rng[data-k="${k}"]`); if (!row) return;
+  const R0 = RANGE[k], [lo, hi] = S.f.range[k] || [R0.min, R0.max], span = R0.max - R0.min || 1;
+  row.classList.toggle('off', !S.f.range[k]);
+  row.querySelectorAll('.lo').forEach(x => { if (+x.value !== lo) x.value = lo; });
+  row.querySelectorAll('.hi').forEach(x => { if (+x.value !== hi) x.value = hi; });
+  const fill = row.querySelector('.rng-s i');
+  fill.style.left = (lo - R0.min) / span * 100 + '%'; fill.style.right = (R0.max - hi) / span * 100 + '%';
+}
+let rangeFrame = 0;
+function setRange(k, lo, hi) {
+  const R0 = RANGE[k];
+  lo = Math.max(R0.min, Math.min(R0.max, lo)); hi = Math.max(R0.min, Math.min(R0.max, hi));
+  if (lo <= R0.min && hi >= R0.max) delete S.f.range[k]; else S.f.range[k] = [lo, hi];
+  syncRangeRow(k);
+  cancelAnimationFrame(rangeFrame); rangeFrame = requestAnimationFrame(update);
+}
+$('#f-ranges').addEventListener('input', e => {
+  const row = e.target.closest('.rng'); if (!row || e.target.type !== 'range') return;
+  const k = row.dataset.k, sl = row.querySelectorAll('input[type=range]');
+  let lo = +sl[0].value, hi = +sl[1].value;
+  if (lo > hi) { if (e.target === sl[0]) lo = hi; else hi = lo; e.target.value = e.target === sl[0] ? lo : hi; }
+  setRange(k, lo, hi);
 });
+$('#f-ranges').addEventListener('change', e => {
+  const row = e.target.closest('.rng'); if (!row || e.target.type !== 'number') return;
+  const k = row.dataset.k, R0 = RANGE[k], ns = row.querySelectorAll('input[type=number]');
+  let lo = ns[0].value === '' ? R0.min : +ns[0].value, hi = ns[1].value === '' ? R0.max : +ns[1].value;
+  if (lo > hi) [lo, hi] = e.target === ns[0] ? [lo, lo] : [hi, hi];
+  setRange(k, lo, hi);
+});
+$('#f-ranges').addEventListener('click', e => {
+  const x = e.target.closest('[data-rmrange]'); if (!x) return;
+  const k = x.dataset.rmrange;
+  delete S.f.range[k]; S.rangeRows = S.rangeRows.filter(r => r !== k);
+  renderRanges(); update();
+});
+$('#f-addrange').addEventListener('change', e => {
+  const k = e.target.value; if (!k) return;
+  if (!S.rangeRows.includes(k)) S.rangeRows.push(k);
+  renderRanges();
+  const row = document.querySelector(`.rng[data-k="${k}"] input[type=range].lo`); if (row) row.focus();
+});
+$('#f-team').addEventListener('change', e => {
+  const v = e.target.value; e.target.checked ? S.f.team.add(v) : S.f.team.delete(v);
+  if (S.f.team.size === 1 && !S.f.pos.size) S.sort = {key: 'squad', dir: 1};
+  update();
+});
+$('#f-team-picked').addEventListener('click', e => { const b = e.target.closest('[data-unteam]'); if (b) { S.f.team.delete(b.dataset.unteam); update(); } });
+$('#f-team-q').addEventListener('input', e => {
+  const q = norm(e.target.value);
+  let grp = null, any = false;
+  for (const el of $('#f-team').children) {
+    if (el.classList.contains('grp')) { if (grp) grp.hidden = !any; grp = el; any = false; continue; }
+    const show = !q || el.dataset.n.includes(q); el.hidden = !show; if (show) any = true;
+  }
+  if (grp) grp.hidden = !any;
+});
+$('#f-nat').addEventListener('change', e => { const v = e.target.value; e.target.checked ? S.f.nat.add(v) : S.f.nat.delete(v); update(); });
+$('#f-pos').addEventListener('click', e => { const b = e.target.closest('[data-pos]'); if (!b) return; const i = +b.dataset.pos; S.f.pos.has(i) ? S.f.pos.delete(i) : S.f.pos.add(i); update(); });
+document.querySelectorAll('[data-unit]').forEach(b => b.addEventListener('click', () => {
+  const set = POS.map((p, i) => (p.u === b.dataset.unit ? i : -1)).filter(i => i >= 0);
+  const on = b.getAttribute('aria-pressed') === 'true';
+  S.f.pos = new Set(on ? [] : set); update();
+}));
+$('#f-main').addEventListener('change', e => { S.f.main = e.target.checked; update(); });
+$('#f-skill').addEventListener('click', e => { const b = e.target.closest('[data-skill]'); if (!b) return; const i = +b.dataset.skill; S.f.skill.has(i) ? S.f.skill.delete(i) : S.f.skill.add(i); update(); });
+$('#f-squad').addEventListener('click', e => { const b = e.target.closest('[data-squad]'); if (b) { S.f.squad = b.dataset.squad; update(); } });
+$('#f-star').addEventListener('change', e => { S.f.star = e.target.checked; update(); });
+$('#rail').addEventListener('click', e => {
+  const r = e.target.closest('[data-reset]'); if (!r) return;
+  const f = S.f, k = r.dataset.reset;
+  if (k === 'team') f.team.clear();
+  else if (k === 'pos') { f.pos.clear(); f.main = false; }
+  else if (k === 'nat') f.nat.clear();
+  else if (k === 'skill') f.skill.clear();
+  else if (k === 'squad') { f.squad = ''; f.star = false; }
+  else if (k === 'range') { f.range = {}; S.rangeRows.forEach(syncRangeRow); }
+  update();
+});
+$('#f-clear').addEventListener('click', clearAll);
+function applyPreset(p) {
+  S.f = emptyF(); S.rangeRows = [...DEFAULT_RANGES]; qEl.value = '';
+  const f = p.f;
+  (f.team || []).forEach(t => S.f.team.add(t));
+  (f.nat || []).forEach(n => S.f.nat.add(n));
+  (f.skill || []).forEach(k => S.f.skill.add(SS.findIndex(s => s.k === k)));
+  if (f.squad) S.f.squad = f.squad;
+  if (f.star) S.f.star = true;
+  for (const [k, [lo, hi]] of Object.entries(f.range || {})) {
+    S.f.range[k] = [lo ?? RANGE[k].min, hi ?? RANGE[k].max];
+    if (!S.rangeRows.includes(k)) S.rangeRows.push(k);
+  }
+  S.sort = {key: p.s[0], dir: p.s[1]};
+  renderRanges(); update();
+}
 $('#presets').addEventListener('click', e => {
   const b = e.target.closest('[data-preset]'); if (!b) return;
-  const p = PRESETS[+b.dataset.preset];
-  setQuery(p.q, p.s);
+  applyPreset(PRESETS[+b.dataset.preset]);
   if (S.view !== 'players') location.hash = 'players';
 });
+// Phones: the rail opens as a full-screen panel.
+function openRail() { $('#rail').classList.add('open'); document.body.style.overflow = 'hidden'; $('#rail-close').focus(); }
+function closeRail() { if (!$('#rail').classList.contains('open')) return; $('#rail').classList.remove('open'); document.body.style.overflow = ''; $('#filters-open').focus(); }
+$('#filters-open').addEventListener('click', openRail);
+$('#rail-close').addEventListener('click', closeRail);
+$('#rail-done').addEventListener('click', () => { closeRail(); window.scrollTo({top: 0}); });
+$('#rail').addEventListener('keydown', e => { if (e.key === 'Escape' && $('#rail').classList.contains('open')) { e.stopPropagation(); closeRail(); } });
 $('#syntax-list').addEventListener('click', e => { const b = e.target.closest('[data-q]'); if (b) { setQuery(b.dataset.q, ['squad', 1]); qEl.focus(); } });
 
 /* ---------- Team card ---------- */
@@ -1093,7 +1406,7 @@ function renderTeamCard() {
   }).join('');
   const mainNat = t.group === 'Internationals' && t.natMix.length ? t.natMix[0][0] : null;
   const natCount = mainNat ? S.players.filter(p => p.nat === mainNat).length : 0;
-  const natBtn = natCount > t.players.length ? `<button class="btn sm primary" type="button" data-nat="${slugify(mainNat)}">All ${fmt(natCount)} ${esc(mainNat)} players →</button>` : '';
+  const natBtn = natCount > t.players.length ? `<button class="btn sm primary" type="button" data-nat="${esc(mainNat)}">All ${fmt(natCount)} ${esc(mainNat)} players →</button>` : '';
   const natTxt = t.natMix.slice(0, 3).map(([n, c]) => `${c} ${n}`).join(', ') + (t.natMix.length > 3 ? `, ${t.natMix.slice(3).reduce((a, [, c]) => a + c, 0)} other` : '');
   el.innerHTML = `<section class="teamcard" aria-label="${esc(t.name)} squad summary">
     <div class="tc-head">
@@ -1112,7 +1425,7 @@ function renderTeamCard() {
 $('#teamcard').addEventListener('click', e => {
   const b = e.target.closest('[data-open]'); if (b) return openPlayerHash(b.dataset.open);
   const n = e.target.closest('[data-nat]');
-  if (n) { setQuery('nat:' + n.dataset.nat, ['squad', 1]); location.hash = 'players'; window.scrollTo({top: 0}); }
+  if (n) { applyPreset({f: {nat: [n.dataset.nat]}, s: ['ovr', -1]}); location.hash = 'players'; window.scrollTo({top: 0}); }
 });
 
 /* ---------- Suggestions ---------- */
@@ -1162,7 +1475,12 @@ function buildSugg() {
     items.push({group: 'Filters', label: `<code>${esc(ins)}</code>`, hint, apply: () => replaceToken(tok, neg + ins, true)});
   });
   const tm = S.teams.filter(x => x.n && x.nameN.includes(w)).slice(0, 4);
-  tm.forEach(x => items.push({group: 'Teams', label: esc(x.name), hint: `${x.group} · ${x.n} players`, apply: () => replaceToken(tok, `team:${x.slug} `)}));
+  tm.forEach(x => items.push({group: 'Teams', label: esc(x.name), hint: `${x.group} · ${x.n} players`, apply: () => {
+    // Picking a team adds it to the Team filter and takes the typed word out of the search box.
+    const v = qEl.value; qEl.value = (v.slice(0, tok.start) + v.slice(tok.end)).replace(/\s+/g, ' ').trimStart();
+    S.f.team.add(x.slug); if (S.f.team.size === 1) S.sort = {key: 'squad', dir: 1};
+    hideSugg(); update();
+  }}));
   const pm = S.players.filter(p => p.nameN.includes(w)).sort((a, b) => (b.surname.startsWith(w) - a.surname.startsWith(w)) || b.star - a.star || a.surname.localeCompare(b.surname)).slice(0, 8);
   pm.forEach(p => items.push({group: 'Players', label: `${p.star ? '<span class="star">★</span>' : ''}${esc(p.name)}`, hint: `OVR ${p.ovr} · ${POS[p.p1] ? POS[p.p1].n : ''} · ${esc(p.teams.map(m => m.team.name).join(', '))}`, apply: () => { hideSugg(); openPlayerHash(p.id); }}));
   return items;
@@ -1507,7 +1825,7 @@ function route() {
   closeDrawer();
   if ((m = /^team-([a-z0-9-]+)$/.exec(h)) && S.teamBySlug[m[1]]) {
     S.baseHash = h; showView('players');
-    setQuery('team:' + m[1], ['squad', 1]);
+    applyPreset({f: {team: [m[1]]}, s: ['squad', 1]});
     window.scrollTo({top: 0}); return;
   }
   if (h === 'teams' || h === 'compare') { S.baseHash = h; showView(h); window.scrollTo({top: 0}); return; }
@@ -1536,10 +1854,9 @@ async function init() {
     return;
   }
   $('#loading').hidden = true;
-  buildRail(); renderColToggles();
-  if (window.matchMedia('(max-width:860px)').matches) $('#rail-details').open = false;
+  buildRanges(); buildRail(); buildSort(); renderColToggles();
   const h = location.hash.slice(1);
-  if (!h) { qEl.value = 'team:south-africa '; }
+  if (!h) S.f.team.add('south-africa');
   else if (h.startsWith('player-')) qEl.value = '';
   update();
   route();

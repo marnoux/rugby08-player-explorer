@@ -6,9 +6,10 @@ A searchable browser for every player in the 2007 PC game *Rugby 08*: all 23 rat
 
 ## What you can do
 
-- **Search everything** with plain text or filters you can combine:
-  `ovr>85 pos:wing`, `skill:goalkicker team:bulls`, `nat:south-african`, `kick:80-90`, `height>195`, `-pos:prop`
-- **Sort and scan** a table of every player, with an overall rating and every rating cell shaded by value
+- **Filter** by team, position, nationality, special skills and squad, with a count beside every option, and set ranges with sliders for overall, height, weight or any of the 23 ratings. On a phone the filters open full screen.
+- **Sort** by any rating, size or name from the Sort by menu, or by clicking a column heading
+- **Search** names, or type filters that add to the ones picked: `ovr>85 pos:wing`, `skill:goalkicker team:bulls`, `kick:80-90`, `-pos:prop`
+- **Scan** a table of every player, with an overall rating and every rating cell shaded by value
 - **Open any player** to see every rating against the average for their position, their rank, special skills, the most similar players, and every squad they appear in
 - **Open any team** for a squad profile, squad leaders and a depth chart
 - **Compare** up to four players side by side
