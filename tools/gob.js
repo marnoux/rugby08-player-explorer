@@ -20,6 +20,9 @@
 //     +78 10 bytes of team values (meaning not known yet)   +88 the rest (kept)
 'use strict';
 const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { execFileSync } = require('child_process');
 
 const RDF_NAME = '73cb47d1d69c90f28fd1cc4186ac1926.rdf';
 const KIT_XML_NAME = '730eef3fd7726e43de955f21083ab000.xml';
@@ -42,6 +45,35 @@ const NATIONALITIES = [
   [17, 'South African', 18], [18, 'Spanish', 19], [19, 'Tongan', 21], [20, 'Tunisian', 22], [21, 'Uruguayan', 23],
   [22, 'American', 24], [23, 'Welsh', 25], [24, 'Portugal', 14],
 ].map(([bit, name, team]) => ({ bit, name, team }));
+
+/* ---------- Finding the game ---------- */
+const hasGob = dir => fs.existsSync(path.join(dir, 'Data', 'data.gob'));
+
+// The install folder (the one that contains Data/data.gob), or null. On Windows it looks in the registry and the
+// default folder; on Linux and macOS in the usual Wine prefixes (~/.wine, $WINEPREFIX, ~/Games/*).
+function findGame() {
+  if (process.platform === 'win32') {
+    try {
+      const out = execFileSync('reg', ['query', 'HKLM\\SOFTWARE\\WOW6432Node\\EA SPORTS\\EA Sports Rugby 08', '/v', 'Install Dir'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+      const m = /Install Dir\s+REG_SZ\s+(.+)/.exec(out);
+      if (m && hasGob(m[1].trim())) return path.resolve(m[1].trim());
+    } catch {}
+    const def = 'C:\\Program Files (x86)\\EA SPORTS\\EA SPORTS(TM) Rugby 08';
+    return hasGob(def) ? def : null;
+  }
+  // Wine: look for EA SPORTS/<...Rugby 08...>/Data/data.gob under drive_c of the usual prefixes.
+  const home = os.homedir(), prefixes = [process.env.WINEPREFIX, path.join(home, '.wine')];
+  try { for (const d of fs.readdirSync(path.join(home, 'Games'))) prefixes.push(path.join(home, 'Games', d)); } catch {}
+  for (const pre of prefixes.filter(Boolean)) {
+    for (const pf of ['Program Files (x86)', 'Program Files']) {
+      const ea = path.join(pre, 'drive_c', pf, 'EA SPORTS');
+      let dirs = [];
+      try { dirs = fs.readdirSync(ea); } catch { continue; }
+      for (const d of dirs) if (/rugby 08/i.test(d) && hasGob(path.join(ea, d))) return path.join(ea, d);
+    }
+  }
+  return null;
+}
 
 /* ---------- Archive ---------- */
 function readDir(buf) {
@@ -267,5 +299,5 @@ function teamNamesFromKitXml(xml) {
 
 module.exports = {
   RDF_NAME, KIT_XML_NAME, SLOTS, ROLES, TEAM_VALUES, RATINGS, SKILLS, POSITIONS, NATIONALITIES,
-  readDir, unrefpack, refpackLiteral, readEntryFromFile, hasEntry, writePatchedGob, copyInto, parseDb, applyDb, teamNamesFromKitXml,
+  hasGob, findGame, readDir, unrefpack, refpackLiteral, readEntryFromFile, hasEntry, writePatchedGob, copyInto, parseDb, applyDb, teamNamesFromKitXml,
 };

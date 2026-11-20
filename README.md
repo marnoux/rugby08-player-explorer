@@ -8,7 +8,7 @@ A searchable browser for every player in the 2007 PC game *Rugby 08*: all 23 rat
 
 - **Search everything** with plain text or filters you can combine:
   `ovr>85 pos:wing`, `skill:goalkicker team:bulls`, `nat:south-african`, `kick:80-90`, `height>195`, `-pos:prop`
-- **Sort and scan** a table of all 1,765 players, with an overall rating and every rating cell shaded by value
+- **Sort and scan** a table of every player, with an overall rating and every rating cell shaded by value
 - **Open any player** to see every rating against the average for their position, their rank, special skills, the most similar players, and every squad they appear in
 - **Open any team** for a squad profile, squad leaders and a depth chart
 - **Compare** up to four players side by side
@@ -42,7 +42,7 @@ What isn't known yet:
 - The 10 team values stored with each squad, which the game doesn't recalculate when you change players
 - Nationality flags for Chile and Tunisia, which are inferred because no shipped player uses them
 
-Edits change the game only. This website still shows the original data.
+Edits change the game only. This website shows the game as shipped.
 
 For scripts, `tools/squad-edit.js` does squad swaps from the command line and `tools/gob.js` holds the archive and database code.
 
@@ -51,11 +51,13 @@ For scripts, `tools/squad-edit.js` does squad swaps from the command line and `t
 | Path | What it is |
 | --- | --- |
 | `index.html` | The page. It is written as a page body (no `<html>`/`<head>`), which `tools/build-pages.js` wraps for GitHub Pages |
-| `players.json` | 1,765 players, one record per line |
-| `teams.json` | 83 team lists, one record per line |
+| `players.json` | One player per line. `t` lists each squad and squad number; empty for a player no team picks |
+| `teams.json` | One team per line. Built from `data.gob`, each also has the game's team number (`tid`) and its 7 role player ids (`roles`) |
 | `docs/` | The built site that GitHub Pages serves |
 | `tools/bigdump.js` | Unpacks and decompresses entries from the game's `data.gob` archive (EA BIG format, RefPack compression) |
-| `tools/build-data.js` | Turns the game's player database text file into `players.json` and `teams.json` |
+| `tools/build-data-gob.js` | Builds `players.json` and `teams.json` from the game's own database in `data.gob` |
+| `tools/build-data.js` | Builds them from the disc's player database text file instead |
+| `tools/team-groups.js` | Which group (Internationals, Super 14, English clubs…) each team is listed under |
 | `tools/build-pages.js` | Builds `docs/` |
 | `tools/serve.js` | Local preview server |
 | `tools/gob.js` | Reads and writes `data.gob` and the game database inside it (player and team record layouts are documented at the top) |
@@ -72,9 +74,18 @@ node tools/serve.js
 
 Then open http://localhost:4318.
 
-## Rebuilding the data from the game disc
+## Rebuilding the data from the game
 
-Needs Node.js and the *Rugby 08* PC disc. On Windows:
+**From the installed game (recommended).** This reads the database the game actually plays with, the same one the editor edits: every player record (including players no team picks), every team, squads by slot and each team's captain and kickers. The disc's text export below is missing players and has squads that don't match the game (Connacht lists 56 players, though a squad holds 30).
+
+```
+node tools/build-data-gob.js
+node tools/build-pages.js
+```
+
+Without a path it finds the game the way the editor does. Otherwise give the game folder (the one that contains `Data/data.gob`) or the `data.gob` itself. If you've saved edits in direct mode it reads `data.gob.original`, so the site shows the game as shipped. It prints every team with where its name came from: names already in `teams.json` are kept, then national sides, then the game's kit list. Check the list and fix any name in `teams.json`; the next run keeps it.
+
+**From the disc's text export.** Needs the *Rugby 08* PC disc. On Windows:
 
 ```
 expand.exe -F:DataData_gob Data.cab extract
@@ -86,6 +97,8 @@ node tools/build-pages.js
 `453779c39fd0d3f0742eb80e0cb2a7c7.txt` is the archive entry that holds the player database. The archive uses hashed file names.
 
 ## Notes on the data
+
+The notes below describe the data built from the disc's text export (1,765 players, 83 team lists). Built from `data.gob`, squad numbers are the game's squad slots (1–15 the starting line-up), every player record is included, and `is:free` finds players in no squad.
 
 - 332 players appear in more than one squad (usually a national side and a club). Their ratings are identical in every squad, so each has one profile.
 - Squad numbers are the order players appear in each team's list in the file.

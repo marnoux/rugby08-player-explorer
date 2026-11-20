@@ -20,25 +20,7 @@ const starts = cols.map(c => {
   return i;
 });
 
-const GROUPS = {
-  'Internationals': ['Argentina', 'Australia', 'Canada', 'Chile', 'England', 'Fiji', 'France', 'Georgia', 'Ireland', 'Italy',
-    'Japan', 'Namibia', 'New Zealand', 'Portugal', 'Romania', 'Russia', 'Scotland', 'South Africa', 'Spain', 'Samoa', 'Tonga',
-    'Tunisia', 'Uruguay', 'USA', 'Wales', 'Jr. All Blacks'],
-  // "Lions" is the Johannesburg side (all South African players), not the British & Irish Lions.
-  'Super 14': ['Lions', 'Brumbies', 'Waratahs', 'Reds', 'Western Force', 'Blues', 'Crusaders', 'Highlanders', 'Chiefs', 'Hurricanes',
-    'Bulls', 'Cats', 'Sharks', 'Stormers', 'Cheetahs'],
-  'English clubs': ['NEC Harlequins', 'Bath', 'Bristol', 'Gloucester', 'Leeds', 'Leicester Tigers', 'London Irish', 'Newcastle',
-    'Northampton', 'Rotherham', 'Sale', 'Saracens', 'London Wasps', 'Worcester', 'Cornish Pirates'],
-  'French clubs': ['Agen', 'Beziers', 'Biarritz', 'Bourgoin', 'Brive', 'Castres', 'Clermont', 'Perpignan', 'Paris', 'Toulouse'],
-  'Irish provinces': ['Leinster', 'Munster', 'Ulster', 'Connacht'],
-  'Italian clubs': ['Treviso', 'Brescia', 'Viadana'],
-  'Scottish clubs': ['Borders', 'Edinburgh', 'Glasgow'],
-  'Welsh clubs': ['Bridgend', 'Cardiff', 'Llanelli', 'Neath-Swansea', 'Newport Gwent'],
-};
-const groupOf = {};
-for (const [g, names] of Object.entries(GROUPS)) for (const n of names) groupOf[n] = g;
-
-const slugify = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const { groupOf, slugify } = require('./team-groups.js');
 
 const teams = [];
 const players = new Map();
@@ -50,7 +32,7 @@ for (let i = 2; i < lines.length; i++) {
     const name = l.trim();
     const seen = teams.filter(t => t.srcName === name).length;
     const slug = slugify(name) + (seen ? '-' + (seen + 1) : '');
-    cur = { slug, srcName: name, name: seen ? `${name} (list ${seen + 1})` : name, group: seen ? 'Internationals' : (groupOf[name] || 'Other'),
+    cur = { slug, srcName: name, name: seen ? `${name} (list ${seen + 1})` : name, group: seen ? 'Internationals' : (groupOf(name) || 'Other'),
       order: teams.length, n: 0, srcRows: 0, line: i + 1, ids: new Set() };
     teams.push(cur);
     continue;

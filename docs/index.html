@@ -633,15 +633,24 @@ function prepare(players, teams) {
     p.nameN = norm(p.name);
     p.surname = norm(p.name.replace(/^[A-Za-z]{1,3}\.\s*/, ''));
     p.hay = ' ' + norm([p.name, p.nat, ...p.pos, ...p.teams.map(m => m.team.name), p.id].join(' ')) + ' ';
-    p.order = p.teams[0].team.order * 1000 + p.teams[0].slot;
+    p.order = p.teams.length ? p.teams[0].team.order * 1000 + p.teams[0].slot : 1e6 + +p.id;
     p.g = GROUPS.map(g => mean(g.idx.map(i => p.r[i])));
     p.ovr = overall(p);
     S.byId[p.id] = p;
     (S.heads[p.head] = S.heads[p.head] || []).push(p);
   }
   S.players = players;
+  S.free = players.filter(p => !p.teams.length).length;
+  S.fromGob = teams.some(t => t.tid);
   for (const t of teams) {
     t.players.sort((a, b) => a.slot - b.slot);
+    // Roles from the game's team record: 1 is usually the captain, 3-7 are kicking duties, 2 isn't known yet.
+    t.roleOf = {};
+    (t.roles || []).forEach((id, i) => {
+      if (!id || i === 1) return;
+      const l = i === 0 ? 'Captain' : 'Kicker';
+      if (!t.roleOf[id]) t.roleOf[id] = l; else if (!t.roleOf[id].includes(l)) t.roleOf[id] += ', ' + l.toLowerCase();
+    });
     const ps = t.players.map(x => x.p);
     t.avg = R.map((_, i) => mean(ps.map(p => p.r[i])));
     t.gAvg = GROUPS.map((_, gi) => mean(ps.map(p => p.g[gi])));
@@ -782,10 +791,10 @@ function parseQuery(q) {
           test = p => [...idx].some(i => p.sk[i]);
           label = `Skill: ${[...idx].map(i => SS[i].l).join(' or ')}`;
         } else if (key === 'is') {
-          const ok = nv.every(v => v === 'star' || v === 'multi');
-          if (!ok) { errors.push({ti, msg: `Use is:star or is:multi`}); return; }
-          test = p => nv.some(v => v === 'star' ? p.star : p.teams.length > 1);
-          label = nv.map(v => v === 'star' ? 'Star players' : 'Club and country').join(' or ');
+          const ok = nv.every(v => v === 'star' || v === 'multi' || v === 'free');
+          if (!ok) { errors.push({ti, msg: `Use is:star, is:multi or is:free`}); return; }
+          test = p => nv.some(v => v === 'star' ? p.star : v === 'free' ? !p.teams.length : p.teams.length > 1);
+          label = nv.map(v => v === 'star' ? 'Star players' : v === 'free' ? 'In no squad' : 'Club and country').join(' or ');
         } else if (key === 'id') {
           test = p => vals.some(v => p.id === v.padStart(5, '0'));
           label = `ID ${vals.join(' or ')}`;
@@ -868,11 +877,12 @@ function update() {
   renderExplain(); renderTeamCard(); renderTable(); syncRail();
   if (S.drawerId) renderDrawer(S.drawerId);
 }
+const team1 = p => (p.teams[0] ? p.teams[0].team.name : 'No squad');
 function slotIn(p, T) { const m = p.teams.find(x => x.team === T); return m ? m.slot : 999; }
 function sortVal(p, key) {
   if (key === 'squad') return S.singleTeam ? slotIn(p, S.singleTeam) : p.order;
   if (key === 'name') return p.surname;
-  if (key === 'team') return p.teams[0].team.name;
+  if (key === 'team') return p.teams.length ? p.teams[0].team.name : '\uffff';
   if (key === 'pos') return p.p1;
   if (key === 'height') return p.h[1];
   if (key === 'weight') return p.w[1];
@@ -932,7 +942,7 @@ function renderHead() {
   GROUPS.forEach(gr => { if (S.cols.has(gr.k)) g += `<th class="gs" colspan="${gr.idx.length}">${gr.l}</th>`; });
   if (S.cols.has('skills')) g += `<th class="gs" colspan="2">Special</th>`;
   g += '</tr>';
-  let c = `<tr class="c">${th('squad', S.singleTeam ? 'No.' : '#', S.singleTeam ? 'Squad number: order in the team list' : 'Sort by team, then squad order', 'st c-idx')}${th('name', 'Name', 'Sort by surname', 'st st2 c-name')}${th('ovr', 'OVR', 'Overall rating (site estimate): weighted average of the key ratings for the main position', 'c-ovr')}${th('team', 'Team', 'Team', 'c-team')}${th('pos', 'Pos', 'Positions, main first', 'c-pos')}${th('height', 'Ht', 'Height in cm')}${th('weight', 'Wt', 'Weight in kg')}`;
+  let c = `<tr class="c">${th('squad', S.singleTeam ? 'No.' : '#', S.singleTeam ? (S.fromGob ? 'Squad slot in the game: 1–15 are the starting line-up' : 'Squad number: order in the team list') : 'Sort by team, then squad order', 'st c-idx')}${th('name', 'Name', 'Sort by surname', 'st st2 c-name')}${th('ovr', 'OVR', 'Overall rating (site estimate): weighted average of the key ratings for the main position', 'c-ovr')}${th('team', 'Team', 'Team', 'c-team')}${th('pos', 'Pos', 'Positions, main first', 'c-pos')}${th('height', 'Ht', 'Height in cm')}${th('weight', 'Wt', 'Weight in kg')}`;
   cols.forEach(col => { const r = R[col.i]; c += th('r' + col.i, r.a, `${r.l}${r.g !== r.l ? ` (game label: ${r.g})` : ''}`, col.gs ? 'gs' : ''); });
   if (S.cols.has('skills')) c += th('skills', 'Skills', 'Special skills', 'gs c-skills') + th('resist', 'Res', 'I. Resist level (0–3)');
   c += '</tr>';
@@ -944,7 +954,7 @@ function rowHTML(p, i, cols) {
   const others = p.teams.filter(m => m.team !== T);
   const teamTitle = p.teams.map(m => `${m.team.name} (#${m.slot})`).join(', ');
   const teamCell = T ? (others.length ? `<span class="mut">also</span> ${esc(others.map(m => m.team.name).join(', '))}` : '<span class="mut">—</span>')
-    : `${esc(p.teams[0].team.name)}${p.teams.length > 1 ? ` <span class="mut">+${p.teams.length - 1}</span>` : ''}`;
+    : !p.teams.length ? '<span class="mut">No squad</span>' : `${esc(p.teams[0].team.name)}${p.teams.length > 1 ? ` <span class="mut">+${p.teams.length - 1}</span>` : ''}`;
   const pos = p.posIdx.map((pi, k) => `<span class="pc${k ? '' : ' p1'}" title="${POS[pi].n}">${POS[pi].a}</span>`).join('');
   let h = `<tr data-id="${p.id}" tabindex="0"${S.drawerId === p.id ? ' aria-selected="true"' : ''}>`
     + `<td class="st c-idx">${no}</td>`
@@ -1028,7 +1038,7 @@ function buildRail() {
   $('#f-nat').innerHTML = `<option value="">Any nationality</option>` + S.nats.map(([n, c]) => `<option value="${slugify(n)}">${esc(n)} (${c})</option>`).join('');
   $('#f-pos').innerHTML = POS.map(p => `<button type="button" class="chip" data-pos="${p.a.toLowerCase()}" title="${p.n}" aria-pressed="false"><span class="n">${p.no}</span>${p.a}</button>`).join('');
   $('#f-skill').innerHTML = SS.map(s => `<button type="button" class="chip" data-skill="${s.k}" title="Game label: ${esc(s.g)}" aria-pressed="false">${s.l}</button>`).join('');
-  $('#f-flags').innerHTML = `<button type="button" class="chip" data-flag="is:star" aria-pressed="false">★ Star players</button><button type="button" class="chip" data-flag="is:multi" aria-pressed="false">Club and country</button>`;
+  $('#f-flags').innerHTML = `<button type="button" class="chip" data-flag="is:star" aria-pressed="false">★ Star players</button><button type="button" class="chip" data-flag="is:multi" aria-pressed="false">Club and country</button>${S.free ? `<button type="button" class="chip" data-flag="is:free" aria-pressed="false">In no squad (${fmt(S.free)})</button>` : ''}`;
   const opts = `<option value="ovr">Overall (site estimate)</option>` + R.map((r, i) => `<option value="${r.k}">${r.l}</option>`).join('')
     + `<optgroup label="Group averages">${GROUPS.map(g => `<option value="${g.k}">${g.l}</option>`).join('')}</optgroup>`
     + `<optgroup label="Build"><option value="height">Height (cm)</option><option value="weight">Weight (kg)</option></optgroup>`
@@ -1079,7 +1089,11 @@ function renderTeamCard() {
   if (!t || !t.players.length) { el.innerHTML = ''; return; }
   const bars = GROUPS.map((g, gi) => `<div class="cmpbar" title="${esc(t.name)} average ${r0(t.gAvg[gi])}; all players ${r0(S.dbGroupAvg[gi])}"><span>${g.l}</span><div class="track"><div class="fill" style="width:${t.gAvg[gi]}%"></div><div class="tick" style="left:${S.dbGroupAvg[gi]}%"></div></div><b class="num">${r0(t.gAvg[gi])}</b></div>`).join('');
   const bestOvr = t.players.reduce((b, x) => !b || x.p.ovr > b.ovr ? x.p : b, null);
-  const leaders = `<span class="l">Highest overall</span><button class="plink" type="button" data-open="${bestOvr.id}">${esc(bestOvr.name)}</button><span class="v">${bestOvr.ovr}</span>` + teamLeaders(t).map(x => `<span class="l">${x.l}</span><button class="plink" type="button" data-open="${x.p.id}">${esc(x.p.name)}</button><span class="v">${x.p.r[x.i]}</span>`).join('');
+  const who = id => S.byId[id] ? `<button class="plink" type="button" data-open="${id}">${esc(S.byId[id].name)}</button>` : `<span class="mut">ID ${id}</span>`;
+  const kickers = t.roles ? [...new Set(t.roles.slice(2).filter(Boolean))] : [];
+  const roleRows = (t.roles && t.roles[0] ? `<span class="l">Captain</span><span>${who(t.roles[0])}</span><span class="v"></span>` : '')
+    + (kickers.length ? `<span class="l">Kicker${kickers.length > 1 ? 's' : ''}</span><span>${kickers.map(who).join(', ')}</span><span class="v"></span>` : '');
+  const leaders = roleRows + `<span class="l">Highest overall</span><button class="plink" type="button" data-open="${bestOvr.id}">${esc(bestOvr.name)}</button><span class="v">${bestOvr.ovr}</span>` + teamLeaders(t).map(x => `<span class="l">${x.l}</span><button class="plink" type="button" data-open="${x.p.id}">${esc(x.p.name)}</button><span class="v">${x.p.r[x.i]}</span>`).join('');
   const depthCol = d => d.pos.map(pi => {
     const ps = t.players.filter(x => x.p.p1 === pi);
     return `<div class="depth-row"><span class="no">${POS[pi].no.split(/[–·]/)[0]}</span><div><span class="ps">${POS[pi].n}</span><div class="names">${ps.length ? ps.map(x => `<span><button class="plink" type="button" data-open="${x.p.id}">${esc(x.p.name)}</button><span class="slot">#${x.slot}</span></span>`).join('') : '<span class="mut">—</span>'}</div></div></div>`;
@@ -1136,7 +1150,7 @@ function buildSugg() {
     else if (key === 'team') cands = S.teams.filter(t => t.n).map(t => [t.slug, `${t.group} · ${t.n} players`, t.name]);
     else if (key === 'nat') cands = S.nats.map(([n, c]) => [slugify(n), `${c} players`, n]);
     else if (key === 'skill') cands = SS.map(s => [s.k, `${S.players.filter(p => p.sk[SS.indexOf(s)]).length} players`, s.l]);
-    else if (key === 'is') cands = [['star', 'Marked ^ in the game file', 'Star players'], ['multi', 'In more than one squad', 'Club and country']];
+    else if (key === 'is') cands = [['star', 'Marked ^ in the game file', 'Star players'], ['multi', 'In more than one squad', 'Club and country']].concat(S.free ? [['free', 'Not picked by any team', 'In no squad']] : []);
     cands.filter(([v, , n]) => !last || v.includes(last.replace(/ /g, '-')) || norm(n).includes(last)).slice(0, 40)
       .forEach(([v, h, n]) => items.push({group: 'Values', label: `<code>${esc(key)}:${esc(v)}</code> ${esc(n)}`, hint: h, apply: () => replaceToken(tok, prefix + v + ' ')}));
     return items;
@@ -1151,7 +1165,7 @@ function buildSugg() {
   keys.forEach(k => {
     const isText = TEXTF.includes(k);
     const ins = isText ? `${k}:` : `${k}>`;
-    const hint = isText ? ({pos: 'Any listed position', pos1: 'Main position', team: 'Team', nat: 'Nationality', skill: 'Special skill', is: 'star or multi', id: 'Player ID', head: 'Head model ID'})[k] : NUM[k].label;
+    const hint = isText ? ({pos: 'Any listed position', pos1: 'Main position', team: 'Team', nat: 'Nationality', skill: 'Special skill', is: 'star, multi or free', id: 'Player ID', head: 'Head model ID'})[k] : NUM[k].label;
     items.push({group: 'Filters', label: `<code>${esc(ins)}</code>`, hint, apply: () => replaceToken(tok, neg + ins, true)});
   });
   const tm = S.teams.filter(x => x.n && x.nameN.includes(w)).slice(0, 4);
@@ -1252,7 +1266,7 @@ function renderDrawer(id) {
       <div class="ovr-big" title="Overall rating (site estimate)"><span class="v">${p.ovr}</span><span class="k">Overall</span></div>
     </div>
     <div class="tagrow">${p.posIdx.map((pi, k) => `<span class="tag" title="${k ? 'Also listed at' : 'Main position'}"><b>${POS[pi].no}</b>${POS[pi].n}</span>`).join('')}</div>
-    <div class="tagrow">${p.teams.map(m => `<button class="tag" type="button" data-team="${m.team.slug}" title="Open ${esc(m.team.name)}"><b>#${m.slot}</b>${esc(m.team.name)}</button>`).join('')}</div>
+    <div class="tagrow">${p.teams.length ? p.teams.map(m => `<button class="tag" type="button" data-team="${m.team.slug}" title="Open ${esc(m.team.name)}"><b>#${m.slot}</b>${esc(m.team.name)}${m.team.roleOf[p.id] ? ` · ${m.team.roleOf[p.id]}` : ''}</button>`).join('') : '<span class="tag" title="The game has a record for this player, but no team picks him">In no squad</span>'}</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn ${inCmp ? 'on' : 'primary'}" type="button" data-cmp>${inCmp ? '✓ In comparison' : '+ Add to compare'}</button>
       <button class="btn" type="button" data-copy>Copy stats</button>
@@ -1292,7 +1306,7 @@ function renderDrawer(id) {
   <div class="dr-sec">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h3>Most similar ratings</h3>
       <button class="chip" type="button" data-simpos aria-pressed="${S.simSamePos}">Same main position only</button></div>
-    <div class="simlist">${sims.map(({q, d}) => `<div class="sim"><button class="plink" type="button" data-open="${q.id}">${q.star ? '<span class="star">★</span>' : ''}${esc(q.name)}</button><span class="m">OVR ${q.ovr} · ${POS[q.p1] ? POS[q.p1].a : ''} · ${esc(q.teams[0].team.name)}</span><span class="d" title="Average gap across all 23 ratings">±${d.toFixed(1)}</span></div>`).join('')}</div>
+    <div class="simlist">${sims.map(({q, d}) => `<div class="sim"><button class="plink" type="button" data-open="${q.id}">${q.star ? '<span class="star">★</span>' : ''}${esc(q.name)}</button><span class="m">OVR ${q.ovr} · ${POS[q.p1] ? POS[q.p1].a : ''} · ${esc(team1(q))}</span><span class="d" title="Average gap across all 23 ratings">±${d.toFixed(1)}</span></div>`).join('')}</div>
     <p class="mut" style="margin:0;font-size:12.5px">± is the average gap across all 23 ratings.</p>
   </div>
   <div class="dr-sec">
@@ -1300,7 +1314,7 @@ function renderDrawer(id) {
     <dl class="ids">
       <dt>Player ID</dt><dd>${p.id}</dd>
       <dt>Head model</dt><dd>${p.head}${p.head === p.id ? ' <span class="mut">(same as player ID)</span>' : ''}</dd>
-      <dt>Squad entries</dt><dd>${p.teams.map(m => `${esc(m.team.name)} #${m.slot}`).join(', ')}</dd>
+      <dt>Squad entries</dt><dd>${p.teams.map(m => `${esc(m.team.name)} #${m.slot}`).join(', ') || 'None'}</dd>
     </dl>
     ${face.length ? `<p style="margin:0;font-size:13.5px">${face.length} other player${face.length > 1 ? 's use' : ' uses'} head model ${p.head}: <button class="plink" type="button" data-head="${p.head}">show them in the table</button></p>
     <div class="facegrid">${face.slice(0, 18).map(q => `<button class="plink" type="button" data-open="${q.id}">${esc(q.name)}</button>`).join('')}${face.length > 18 ? `<span class="mut">+${face.length - 18} more</span>` : ''}</div>` : '<p class="mut" style="margin:0;font-size:13.5px">No other player uses this head model.</p>'}
@@ -1413,7 +1427,7 @@ function wireCompareAdd() {
   const draw = () => {
     const w = norm(inp.value); act = -1;
     items = w ? S.players.filter(p => p.nameN.includes(w) && !S.compare.includes(p.id)).sort((a, b) => (b.surname.startsWith(w) - a.surname.startsWith(w)) || b.star - a.star).slice(0, 8) : [];
-    box.innerHTML = items.map((p, i) => `<button type="button" class="sugg-i" data-i="${i}" aria-selected="false"><span>${p.star ? '<span class="star">★</span>' : ''}${esc(p.name)}</span><span class="h">${POS[p.p1] ? POS[p.p1].a : ''} · ${esc(p.teams[0].team.name)}</span></button>`).join('');
+    box.innerHTML = items.map((p, i) => `<button type="button" class="sugg-i" data-i="${i}" aria-selected="false"><span>${p.star ? '<span class="star">★</span>' : ''}${esc(p.name)}</span><span class="h">${POS[p.p1] ? POS[p.p1].a : ''} · ${esc(team1(p))}</span></button>`).join('');
     box.hidden = !items.length;
   };
   const pick = i => { if (items[i]) { toggleCompare(items[i].id); setTimeout(() => { const n = $('#cmp-q'); n && n.focus(); }, 0); } };
@@ -1448,16 +1462,20 @@ function renderTeams() {
   el.innerHTML = `<div class="teams-intro"><h1>Teams</h1><p class="mut" style="margin:0">${S.teams.filter(t => t.n).length} squads with players · tiles show squad averages for Overall, Attack and Defence</p></div>
     ${Object.entries(groups).map(([g, ts]) => `<section class="tgroup"><h2>${esc(g)} <span style="letter-spacing:0;text-transform:none;font-family:var(--f-body);font-weight:400">${ts.length}</span></h2><div class="tiles">${ts.map(tile).join('')}</div></section>`).join('')}
     <section class="datanotes" aria-label="About the data"><h2>About the data</h2><ul>
-      <li>Read from the player database inside <code class="inl">data.gob</code> on the Rugby 08 PC disc (2007): ${fmt(entries)} squad entries for ${fmt(S.players.length)} different players in ${S.teams.length} team lists.</li>
+      ${S.fromGob
+        ? `<li>Read from the game's own database inside <code class="inl">data.gob</code> (Rugby 08 PC, 2007), the data the game plays with: ${fmt(S.players.length)} players and ${S.teams.length} teams, with ${fmt(entries)} squad places filled.${S.free ? ` ${fmt(S.free)} players have a record but no team picks them; find them with <code class="inl">is:free</code>.` : ''}</li>`
+        : `<li>Read from the player database inside <code class="inl">data.gob</code> on the Rugby 08 PC disc (2007): ${fmt(entries)} squad entries for ${fmt(S.players.length)} different players in ${S.teams.length} team lists.</li>`}
       <li>${fmt(multi)} players appear in more than one squad, usually a national side and a club. Their ratings are identical in every squad, so each has one profile listing every team.</li>
-      <li>Squad numbers (#) are the order players appear in each team's list in the file. For many squads, 1–15 follow the usual starting positions.</li>
+      ${S.fromGob
+        ? `<li>Squad numbers (#) are the game's squad slots, 1 to 30. Slots 1–15 are the starting line-up. Each team's captain and kickers come from the game's team record.</li>`
+        : `<li>Squad numbers (#) are the order players appear in each team's list in the file. For many squads, 1–15 follow the usual starting positions.</li>`}
       <li>Names the file marks with ^ are shown with ★, for example Carter, Wilkinson and Habana.</li>
-      <li>The file's column headings swap the height and weight units. The values are inches/cm and pounds/kg, and are shown that way here.</li>
+      ${S.fromGob ? '' : `<li>The file's column headings swap the height and weight units. The values are inches/cm and pounds/kg, and are shown that way here.</li>`}
       <li>“I. Resist” sits among the special skills (“SS I. Resist”) but holds a level from 0 to 3 instead of Yes or No. The file doesn't say what it stands for.</li>
       <li>Group averages (Ball play, Athletic, Contact, Set piece, Mindset) are this site's own grouping of the 23 game ratings, not values from the game.</li>
       <li>Overall (OVR) is this site's estimate, not a number from the game: a weighted average of the ratings that matter most for each player's main position (for example Scrummaging and Strength for props, Speed and Acceleration for wings). Fitness isn't included. Open any player to see the exact weights.</li>
       ${S.teams.filter(t => t.notes.length).map(t => `<li>${esc(t.name)}: ${t.notes.map(esc).join(' ')}</li>`).join('')}
-      <li>${empty.length} team lists in the file have no players: ${empty.map(t => esc(t.name)).join(', ')}.</li>
+      ${empty.length ? `<li>${empty.length} ${S.fromGob ? 'teams in the game' : 'team lists in the file'} have no players: ${empty.map(t => esc(t.name)).join(', ')}.</li>` : ''}
     </ul></section>`;
 }
 

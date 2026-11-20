@@ -16,7 +16,6 @@
 'use strict';
 const http = require('http');
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const { execFileSync, spawn } = require('child_process');
 const g = require('../tools/gob.js');
@@ -29,39 +28,14 @@ for (let i = 2; i < process.argv.length; i++) {
 }
 const PORT = +args.port || 4319;
 
-const hasGob = dir => fs.existsSync(path.join(dir, 'Data', 'data.gob'));
-
-function findGame() {
-  if (args.game) return path.resolve(args.game);
-  if (IS_WIN) {
-    try {
-      const out = execFileSync('reg', ['query', 'HKLM\\SOFTWARE\\WOW6432Node\\EA SPORTS\\EA Sports Rugby 08', '/v', 'Install Dir'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-      const m = /Install Dir\s+REG_SZ\s+(.+)/.exec(out);
-      if (m && hasGob(m[1].trim())) return path.resolve(m[1].trim());
-    } catch {}
-    const def = 'C:\\Program Files (x86)\\EA SPORTS\\EA SPORTS(TM) Rugby 08';
-    return hasGob(def) ? def : null;
-  }
-  // Wine: look for EA SPORTS/<...Rugby 08...>/Data/data.gob under drive_c of the usual prefixes.
-  const home = os.homedir(), prefixes = [process.env.WINEPREFIX, path.join(home, '.wine')];
-  try { for (const d of fs.readdirSync(path.join(home, 'Games'))) prefixes.push(path.join(home, 'Games', d)); } catch {}
-  for (const pre of prefixes.filter(Boolean)) {
-    for (const pf of ['Program Files (x86)', 'Program Files']) {
-      const ea = path.join(pre, 'drive_c', pf, 'EA SPORTS');
-      let dirs = [];
-      try { dirs = fs.readdirSync(ea); } catch { continue; }
-      for (const d of dirs) if (/rugby 08/i.test(d) && hasGob(path.join(ea, d))) return path.join(ea, d);
-    }
-  }
-  return null;
-}
+const hasGob = g.hasGob;
 
 function underProgramFiles(dir) {
   const pf = [process.env['ProgramFiles(x86)'], process.env.ProgramFiles].filter(Boolean).map(p => p.toLowerCase() + path.sep);
   return pf.some(p => dir.toLowerCase().startsWith(p));
 }
 
-const GAME = findGame();
+const GAME = args.game ? path.resolve(args.game) : g.findGame();
 if (!GAME || !hasGob(GAME)) {
   console.error(`Can't find Rugby 08${GAME ? ` in ${GAME}` : ''}. Start the editor with --game "<install folder>", the folder that contains Data/data.gob.`);
   process.exit(1);
@@ -91,6 +65,11 @@ const TEAM_NAMES = (() => {
   try {
     const root = path.join(__dirname, '..');
     const teams = JSON.parse(fs.readFileSync(path.join(root, 'teams.json'), 'utf8'));
+    // Built from data.gob (tools/build-data-gob.js): each team carries its number, so use the site's names directly.
+    if (teams.some(tm => tm.tid)) {
+      for (const tm of teams) if (tm.tid) names[tm.tid] = tm.name;
+      return names;
+    }
     const players = JSON.parse(fs.readFileSync(path.join(root, 'players.json'), 'utf8'));
     const members = {};
     for (const p of players) for (const [slug] of p.t) (members[slug] = members[slug] || new Set()).add(+p.id);
