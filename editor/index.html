@@ -1,0 +1,739 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rugby 08 Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: sticky header with save controls; each tab is a two- or three-column workbench with its own scrolling columns */
+:root{
+  --paper:#f3f5f0; --surface:#fcfdfb; --sunk:#e9ede6; --ink:#14211a; --ink-2:#44544b; --muted:#66746c;
+  --line:#d8dfd6; --line-2:#c1cbc0; --turf:#17633f; --turf-ink:#ffffff; --turf-wash:#deece2;
+  --gold:#9a6a0c; --gold-wash:#f5ead0; --danger:#b3261e; --danger-wash:#fbe9e7; --warn:#8a5a00; --warn-wash:#fbf0d9;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --shadow:0 18px 50px rgba(20,33,26,.18); --hdr:64px; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#0d1310; --surface:#131b17; --sunk:#1b2520; --ink:#e5ece6; --ink-2:#b0bfb6; --muted:#87958d;
+    --line:#243029; --line-2:#344239; --turf:#4cb784; --turf-ink:#08130d; --turf-wash:#183022;
+    --gold:#e0b04a; --gold-wash:#352a12; --danger:#f2867d; --danger-wash:#3a1d1a; --warn:#e8b65a; --warn-wash:#33280f;
+    --shadow:0 18px 50px rgba(0,0,0,.5); color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--paper);color:var(--ink)}
+body{font-family:var(--f-body);font-size:15px;line-height:1.4;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column}
+[hidden]{display:none!important}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--turf);outline-offset:2px}
+.mut{color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+.eyebrow{font-family:var(--f-display);font-weight:600;font-size:12.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0}
+.btn{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border:1px solid var(--line-2);border-radius:6px;background:var(--surface);cursor:pointer;font-size:14px;font-weight:500;white-space:nowrap}
+.btn:hover:not(:disabled){border-color:var(--turf)}
+.btn.primary{background:var(--turf);border-color:var(--turf);color:var(--turf-ink)}
+.btn.danger{border-color:var(--danger);color:var(--danger)}
+.btn.sm{height:28px;padding:0 9px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:default}
+.plink{border:0;background:none;padding:0;cursor:pointer;color:var(--ink);font-weight:600;text-align:left;text-decoration:underline;text-decoration-color:var(--line-2);text-underline-offset:3px}
+.plink:hover{color:var(--turf);text-decoration-color:var(--turf)}
+.star{color:var(--gold);font-size:12px;margin-left:3px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:1px 7px;border-radius:999px;white-space:nowrap}
+.chip.warn{background:var(--warn-wash);color:var(--warn)}
+.chip.bad{background:var(--danger-wash);color:var(--danger)}
+.chip.ok{background:var(--turf-wash);color:var(--ink)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex:none}
+.dot.chg{background:var(--gold)}
+.dot.unsaved{background:var(--danger)}
+
+/* Header */
+.top{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:10px 20px}
+.brand{display:flex;flex-direction:column;line-height:1}
+.brand b{font-family:var(--f-display);font-weight:700;font-size:13px;letter-spacing:.14em;color:var(--turf)}
+.brand span{font-family:var(--f-display);font-weight:600;font-size:24px}
+.tabs{display:flex;gap:2px;background:var(--sunk);padding:3px;border-radius:8px}
+.tabs button{font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.03em;border:0;background:none;padding:6px 16px;border-radius:6px;color:var(--ink-2);cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.spacer{flex:1}
+.status{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-2)}
+.pill{font-family:var(--f-display);font-weight:600;letter-spacing:.04em;font-size:13px;padding:3px 10px;border-radius:999px;background:var(--sunk);color:var(--ink-2);text-transform:uppercase}
+.pill.edited{background:var(--gold-wash);color:var(--gold)}
+.unsaved{font-size:13.5px;font-weight:600;color:var(--danger)}
+.restore-pop{position:absolute;right:20px;top:calc(100% + 6px);width:min(380px,calc(100vw - 40px));background:var(--surface);border:1px solid var(--line-2);border-radius:8px;box-shadow:var(--shadow);padding:14px;display:flex;flex-direction:column;gap:10px;font-size:14px}
+.banner{margin:12px 20px 0;padding:10px 14px;border-radius:8px;font-size:14px;white-space:pre-line}
+.banner.err{background:var(--danger-wash);color:var(--danger)}
+.banner.info{background:var(--turf-wash)}
+
+/* Workbench */
+main{flex:1;min-height:0;display:flex}
+.view{flex:1;min-height:0;display:grid;gap:0;grid-template-rows:minmax(0,1fr)}
+#view-squads{grid-template-columns:240px minmax(0,1fr) auto}
+#view-players{grid-template-columns:330px minmax(0,1fr)}
+.col{min-height:0;overflow:auto;padding:16px 20px}
+.col.side{border-right:1px solid var(--line);background:var(--surface);padding:14px}
+.search{width:100%;height:38px;border:1.5px solid var(--line-2);border-radius:8px;padding:0 10px;background:var(--paper)}
+.search:focus{border-color:var(--turf);outline:none;background:var(--surface)}
+.side select{width:100%;height:34px;border:1px solid var(--line-2);border-radius:6px;background:var(--surface);padding:0 6px;font-size:14px}
+.tlist,.plist{display:flex;flex-direction:column;margin-top:10px}
+.titem{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:0;background:none;padding:7px 9px;border-radius:6px;cursor:pointer;font-size:14.5px}
+.titem:hover{background:var(--sunk)}
+.titem[aria-current="true"]{background:var(--turf-wash);font-weight:600}
+.titem .n{margin-left:auto;font-size:12px;color:var(--muted)}
+.pitem{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;padding:7px 6px;cursor:pointer}
+.pitem:hover{background:var(--sunk)}
+.pitem[aria-current="true"]{background:var(--turf-wash)}
+.pitem .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pitem .sub{display:block;font-size:12px;color:var(--muted);font-weight:400}
+.pitem .o{font-family:var(--f-display);font-weight:700;font-size:17px}
+.check{display:flex;align-items:center;gap:6px;font-size:13.5px;margin-top:8px}
+.filters{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+
+/* Squad */
+.sq-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:12px}
+.sq-head h1{font-family:var(--f-display);font-weight:700;font-size:38px;line-height:1;text-transform:uppercase;margin:0}
+.sq-head .meta{margin:4px 0 0;color:var(--ink-2);font-size:14px}
+.swapbar{background:var(--gold-wash);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:14px;display:flex;gap:10px;align-items:center}
+table.sq{width:100%;border-collapse:collapse;font-size:14px;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.sq th{font-family:var(--f-display);font-weight:600;font-size:12.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);text-align:left;padding:12px 10px 6px;background:var(--surface)}
+.sq td{padding:6px 10px;border-top:1px solid var(--line);vertical-align:middle}
+.sq td.no{width:40px;font-family:var(--f-display);font-weight:700;font-size:18px;color:var(--turf);text-align:right}
+.sq td.slotpos{width:130px;color:var(--muted);font-size:13px}
+.sq td.who .sub{display:block;font-size:12.5px;color:var(--muted)}
+.sq td.ovr{width:48px;text-align:right;font-family:var(--f-display);font-weight:700;font-size:18px}
+.sq td.warn{width:1%;white-space:nowrap}
+.sq td.acts{width:1%;white-space:nowrap;text-align:right}
+.sq tr.chg td.no{box-shadow:inset 3px 0 0 var(--gold)}
+.was{display:inline-block;margin-left:6px;font-size:12px;color:var(--gold)}
+.sq tr.swap-from td{background:var(--gold-wash)}
+.sq.swapping tbody tr:not(.swap-from){cursor:pointer}
+.sq.swapping tbody tr:not(.swap-from):hover td{background:var(--turf-wash)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-top:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.card h2{font-family:var(--f-display);font-weight:600;font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0}
+.role{display:grid;grid-template-columns:150px minmax(0,1fr);gap:8px;align-items:center;font-size:13.5px}
+.role select,.card input[type=number]{height:32px;border:1px solid var(--line-2);border-radius:6px;background:var(--surface);padding:0 6px;font-size:14px;min-width:0;width:100%}
+.tvals{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.note{font-size:12.5px;color:var(--muted);margin:0}
+
+/* Picker */
+.picker{width:360px;border-left:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;min-height:0}
+.picker .ph{padding:14px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.picker .ph h2{font-family:var(--f-display);font-weight:700;font-size:20px;margin:0;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
+.picker .pl{overflow:auto;min-height:0;flex:1;padding:4px 14px 14px}
+.pick{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;padding:8px 4px;cursor:pointer}
+.pick:hover{background:var(--turf-wash)}
+.pick .nm{font-weight:600}
+.pick .o{font-family:var(--f-display);font-weight:700;font-size:18px;grid-row:span 2;align-self:center}
+.pick .sub{font-size:12.5px;color:var(--muted)}
+
+/* Player form */
+.pf{max-width:980px;display:flex;flex-direction:column;gap:14px}
+.pf-head{display:flex;flex-wrap:wrap;align-items:center;gap:14px}
+.pf-head h1{font-family:var(--f-display);font-weight:700;font-size:38px;line-height:1;text-transform:uppercase;margin:0;overflow-wrap:anywhere}
+.ovrbox{display:flex;flex-direction:column;align-items:center;min-width:70px;padding:6px 10px;border-radius:8px;background:var(--turf-wash)}
+.ovrbox b{font-family:var(--f-display);font-size:34px;line-height:1}
+.ovrbox span{font-family:var(--f-display);font-weight:600;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:13.5px;padding:6px 8px;border-radius:6px}
+.fld label,.fld .lb{color:var(--ink-2);font-weight:500}
+.fld input[type=text],.fld input[type=number],.fld select{height:34px;border:1px solid var(--line-2);border-radius:6px;background:var(--surface);padding:0 8px;font-size:14.5px;min-width:0}
+.fld .x{font-size:12.5px;color:var(--muted)}
+.chg{background:var(--gold-wash)}
+.fld .orig{font-size:12px;color:var(--gold)}
+.err-msg{font-size:12.5px;color:var(--danger)}
+.rgroups{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.rg h3{font-family:var(--f-display);font-weight:600;font-size:15px;margin:2px 0 6px}
+.rrow{display:grid;grid-template-columns:104px minmax(0,1fr) 54px 26px;gap:8px;align-items:center;font-size:13.5px;padding:2px 6px;border-radius:6px}
+.rrow input[type=range]{width:100%;accent-color:var(--turf)}
+.rrow input[type=number]{height:28px;border:1px solid var(--line-2);border-radius:6px;background:var(--surface);padding:0 4px;font-size:14px;width:100%;text-align:right}
+.rrow .orig{font-size:11.5px;color:var(--gold);text-align:right}
+.skills{display:flex;flex-wrap:wrap;gap:6px}
+.skill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-2);border-radius:999px;padding:4px 11px;font-size:13.5px;cursor:pointer;background:var(--surface)}
+.skill:has(input:checked){background:var(--turf-wash);border-color:var(--turf);font-weight:600}
+.skill input{accent-color:var(--turf);margin:0}
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:6px;overflow:hidden}
+.seg label{padding:5px 14px;cursor:pointer;border-left:1px solid var(--line-2)}
+.seg label:first-child{border-left:0}
+.seg label:has(input:checked){background:var(--turf);color:var(--turf-ink)}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.teamsin{display:flex;flex-wrap:wrap;gap:6px}
+.empty{padding:60px 20px;text-align:center;color:var(--ink-2)}
+.empty h2{font-family:var(--f-display);font-size:26px;text-transform:uppercase;color:var(--ink);margin:0 0 6px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:999px;font-size:14px;z-index:50;box-shadow:var(--shadow);max-width:calc(100vw - 40px)}
+@media (max-width:1100px){ #view-squads{grid-template-columns:200px minmax(0,1fr)} .picker{position:fixed;right:0;top:0;bottom:0;z-index:30;box-shadow:var(--shadow)} }
+@media (max-width:760px){ main{display:block;overflow:auto} .view{display:block} .col{overflow:visible} .col.side{border-right:0;border-bottom:1px solid var(--line)} .tlist{max-height:240px;overflow:auto} .plist{max-height:300px;overflow:auto} .picker{width:100%} }
+</style>
+</head>
+<body>
+<header class="top" id="top">
+  <div class="brand"><b>RUGBY 08</b><span>Editor</span></div>
+  <div class="tabs" role="group" aria-label="Views">
+    <button type="button" data-tab="squads" aria-pressed="true">Squads</button>
+    <button type="button" data-tab="players" aria-pressed="false">Players</button>
+  </div>
+  <div class="status"><span class="pill" id="pill">Loading…</span><span id="savedat"></span></div>
+  <div class="spacer"></div>
+  <span class="unsaved" id="unsaved" hidden></span>
+  <button class="btn" type="button" id="discard" disabled>Discard changes</button>
+  <button class="btn primary" type="button" id="save" disabled>Save to game</button>
+  <button class="btn sm" type="button" id="restore-open" title="Delete the edited copies so the game uses its original data">Restore original…</button>
+  <div class="restore-pop" id="restore-pop" hidden>
+    <strong>Restore the original game data?</strong>
+    <span>This deletes the edited copies, so the game goes back to its original squads and players. Unsaved changes are discarded too.</span>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" type="button" id="restore-cancel">Cancel</button><button class="btn danger" type="button" id="restore-go">Restore original</button></div>
+  </div>
+</header>
+<div class="banner err" id="banner" hidden></div>
+<main>
+  <section class="view" id="view-squads">
+    <aside class="col side">
+      <input class="search" id="tq" type="search" placeholder="Find a team" aria-label="Find a team" autocomplete="off">
+      <label class="check"><input type="checkbox" id="tempty"> Show empty team records</label>
+      <div class="tlist" id="tlist"></div>
+    </aside>
+    <div class="col" id="squad"></div>
+    <aside class="picker" id="picker" hidden></aside>
+  </section>
+  <section class="view" id="view-players" hidden>
+    <aside class="col side">
+      <input class="search" id="pq" type="search" placeholder="Find a player" aria-label="Find a player" autocomplete="off">
+      <div class="filters">
+        <select id="fpos" aria-label="Position"></select>
+        <select id="fnat" aria-label="Nationality"></select>
+        <select id="fteam" aria-label="Team" style="grid-column:1/-1"></select>
+      </div>
+      <label class="check"><input type="checkbox" id="fchg"> Only players you've changed</label>
+      <div class="plist" id="plist"></div>
+    </aside>
+    <div class="col" id="pform"></div>
+  </section>
+</main>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+'use strict';
+/* ---------- Constants ---------- */
+const POS_SHORT = ['', 'LH', 'HK', 'TH', 'LK', 'BF', 'OF', 'N8', 'SH', 'FH', 'WG', 'CE', 'FB'];
+// Game position code expected in starting slots 1-15, and the shirt label for each.
+const SLOT_POS = [1, 2, 3, 4, 4, 5, 6, 7, 8, 9, 10, 11, 11, 10, 12];
+const SLOT_LABEL = ['Loosehead prop', 'Hooker', 'Tighthead prop', 'Lock', 'Lock', 'Blindside flanker', 'Openside flanker', 'Number eight', 'Scrum half', 'Fly half', 'Left wing', 'Inside centre', 'Outside centre', 'Right wing', 'Full back'];
+const SQUAD_PARTS = [{ l: 'Starting line-up', a: 0, b: 15 }, { l: 'Replacements', a: 15, b: 22 }, { l: 'Rest of the squad', a: 22, b: 30 }];
+const ROLE_LABEL = ['Role 1 · usually captain', 'Role 2 · not confirmed', 'Kicking role 1', 'Kicking role 2', 'Kicking role 3', 'Kicking role 4', 'Kicking role 5'];
+const GROUPS = [
+  { l: 'Ball play', idx: [0, 5, 6, 7, 8] },
+  { l: 'Athletic', idx: [2, 3, 4, 10, 17, 22] },
+  { l: 'Defence & contact', idx: [1, 9, 11, 21, 16] },
+  { l: 'Set piece', idx: [12, 13, 14] },
+  { l: 'Mindset', idx: [15, 18, 19, 20] },
+];
+// Overall rating weights, the same as OVR_W in the explorer's index.html, keyed by the game's position code.
+const OVR_W = {
+  1: [[12,3],[10,2.5],[11,1.5],[9,1.5],[1,1],[17,1],[0,.5],[5,.5],[21,.5]],
+  2: [[13,3],[14,2.5],[12,2],[10,1.5],[11,1.5],[9,1.5],[1,1],[17,1],[5,.5]],
+  3: [[12,3],[10,2.5],[11,1.5],[9,1.5],[1,1],[17,1],[0,.5],[5,.5],[21,.5]],
+  4: [[14,3],[10,2],[11,1.5],[9,1.5],[12,1.5],[1,1],[17,1],[5,1],[0,.5]],
+  5: [[9,2.5],[11,2],[10,1.5],[1,1.5],[17,1.5],[14,1],[2,1],[5,1],[0,1],[21,1]],
+  6: [[11,2.5],[9,2.5],[2,1.5],[17,1.5],[1,1.5],[3,1],[5,1],[0,1],[10,1],[21,1]],
+  7: [[10,2],[0,2],[5,1.5],[11,1.5],[9,1.5],[1,1],[2,1],[17,1],[14,1]],
+  8: [[6,3],[5,2],[3,1.5],[4,1.5],[7,1.5],[2,1],[0,1],[1,1],[20,1],[9,.5]],
+  9: [[7,2.5],[6,2],[5,2],[20,2],[8,1.5],[0,1.5],[4,1],[1,1],[2,.5],[9,.5]],
+  10: [[2,3],[3,2],[4,2],[0,2],[5,1.5],[1,1],[9,1],[7,.5]],
+  11: [[0,2],[5,2],[9,2],[1,2],[2,1.5],[10,1.5],[3,1],[4,1],[6,1],[7,.5]],
+  12: [[7,2],[5,2],[1,2],[2,1.5],[0,1.5],[9,1.5],[3,1],[4,1],[6,1]],
+};
+
+/* ---------- Helpers ---------- */
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const norm = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const clone = o => JSON.parse(JSON.stringify(o));
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const fmtTime = iso => new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const baseName = n => n.replace(/\^$/, '');
+const isStar = n => n.endsWith('^');
+const surname = n => norm(baseName(n).replace(/^[A-Za-z]{1,3}\.\s*/, ''));
+function ovr(p) {
+  const w = OVR_W[p.pos[0]];
+  if (!w) return Math.round(p.r.reduce((a, b) => a + b, 0) / p.r.length);
+  let s = 0, t = 0; for (const [i, k] of w) { s += p.r[i] * k; t += k; }
+  return Math.round(s / t);
+}
+const cm = inch => Math.round(inch * 2.54);
+const ftin = inch => `${Math.floor(inch / 12)}′${inch % 12}″`;
+const kg = lb => Math.round(lb * 0.4536);
+const stone = lb => `${Math.floor(lb / 14)} st ${lb % 14} lb`;
+
+/* ---------- State ---------- */
+const S = {
+  meta: null, orig: null, saved: null, cur: null,
+  P: new Map(), OP: new Map(), SP: new Map(), OT: new Map(), ST: new Map(),
+  heads: new Set(), tab: 'squads', tid: 18, pid: null, swapFrom: null, pick: null, plimit: 200,
+};
+const posName = c => (S.meta.positions[c] || (c ? `Code ${c}` : 'None'));
+const natOf = mask => S.meta.nationalities.find(n => mask >>> 0 === (2 ** n.bit));
+const natName = mask => (natOf(mask) || { name: `Other (${mask})` }).name;
+const teamName = tid => S.meta.teamNames[tid] || `Team ${tid}`;
+const nationalTeam = tid => S.meta.nationalities.find(n => n.team === tid);
+const team = tid => S.cur.teams[tid - 1];
+const pname = id => { const p = S.P.get(id); return p ? baseName(p.name) : `#${id}`; };
+const starHTML = p => (p && isStar(p.name) ? '<span class="star" title="Star player (^ in the game data)">★</span>' : '');
+const posCodes = p => p.pos.filter(Boolean).map(c => POS_SHORT[c] || `#${c}`).join(' · ');
+
+function load(state) {
+  S.meta = state;
+  S.orig = state.original; S.saved = clone(state.current); S.cur = clone(state.current);
+  index();
+}
+function index() {
+  S.P = new Map(S.cur.players.map(p => [p.id, p]));
+  S.OP = new Map(S.orig.players.map(p => [p.id, p]));
+  S.SP = new Map(S.saved.players.map(p => [p.id, p]));
+  S.OT = new Map(S.orig.teams.map(t => [t.tid, t]));
+  S.ST = new Map(S.saved.teams.map(t => [t.tid, t]));
+  S.heads = new Set(S.orig.players.map(p => p.head));
+}
+const pChg = p => !same(p, S.OP.get(p.id));
+const pUnsaved = p => !same(p, S.SP.get(p.id));
+const tChg = t => !same(t, S.OT.get(t.tid));
+const tUnsaved = t => !same(t, S.ST.get(t.tid));
+const squadsOf = id => S.cur.teams.filter(t => t.slots.includes(id)).map(t => ({ tid: t.tid, slot: t.slots.indexOf(id) + 1 }));
+
+function problems() {
+  const out = [];
+  for (const p of S.cur.players) {
+    if (!pChg(p)) continue;
+    const who = baseName(S.OP.get(p.id).name);
+    if (!/^[A-Za-z]/.test(p.name)) out.push({ pid: p.id, msg: `${who}: the name must start with a letter` });
+    else if (!/^[\x20-\x7e\xa0-\xff]+$/.test(p.name)) out.push({ pid: p.id, msg: `${who}: the name has characters the game can't show` });
+    else if (p.name.length > 15) out.push({ pid: p.id, msg: `${who}: the name is ${p.name.length} characters, 15 is the most (★ counts as one)` });
+    if (!Number.isInteger(p.inch) || p.inch < 60 || p.inch > 100) out.push({ pid: p.id, msg: `${who}: height must be 60–100 inches` });
+    if (!Number.isInteger(p.lb) || p.lb < 100 || p.lb > 600) out.push({ pid: p.id, msg: `${who}: weight must be 100–600 lb` });
+    if (!p.r.every(v => Number.isInteger(v) && v >= 0 && v <= 100)) out.push({ pid: p.id, msg: `${who}: ratings must be whole numbers from 0 to 100` });
+    if (p.head !== S.OP.get(p.id).head && !S.heads.has(p.head)) out.push({ pid: p.id, msg: `${who}: head model ${p.head} isn't used by any player in the game` });
+    if (p.pos[0] < 1) out.push({ pid: p.id, msg: `${who}: needs a main position` });
+  }
+  for (const t of S.cur.teams) {
+    if (!tChg(t)) continue;
+    if (!t.values.every(v => Number.isInteger(v) && v >= 0 && v <= 255)) out.push({ tid: t.tid, msg: `${teamName(t.tid)}: team values must be 0–255` });
+  }
+  return out;
+}
+
+/* ---------- Header ---------- */
+function renderHeader() {
+  const edited = S.meta.source === 'edited';
+  const pill = $('#pill');
+  pill.textContent = edited ? 'Game uses your edits' : 'Game uses original data';
+  pill.className = 'pill' + (edited ? ' edited' : '');
+  $('#savedat').textContent = edited && S.meta.savedAt ? `saved ${fmtTime(S.meta.savedAt)}` : '';
+  let n = 0;
+  for (const p of S.cur.players) if (pUnsaved(p)) n++;
+  for (const t of S.cur.teams) if (tUnsaved(t)) n++;
+  const probs = problems();
+  const u = $('#unsaved');
+  u.hidden = !n;
+  u.textContent = probs.length ? `${probs.length} problem${probs.length > 1 ? 's' : ''} to fix` : `${n} unsaved change${n > 1 ? 's' : ''}`;
+  u.title = probs.map(p => p.msg).join('\n');
+  $('#save').disabled = !n || probs.length > 0 || S.busy;
+  $('#discard').disabled = !n || S.busy;
+  $('#restore-open').disabled = S.busy;
+}
+function banner(msg, kind = 'err') {
+  const b = $('#banner');
+  b.hidden = !msg; b.className = 'banner ' + kind; b.textContent = msg || '';
+}
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 4200);
+}
+
+/* ---------- Squads ---------- */
+function renderTeamList() {
+  const q = norm($('#tq').value.trim()), showEmpty = $('#tempty').checked;
+  const items = S.cur.teams.filter(t => {
+    const hasPlayers = t.slots.some(Boolean) || S.OT.get(t.tid).slots.some(Boolean);
+    if (!hasPlayers && !showEmpty) return false;
+    return !q || norm(teamName(t.tid)).includes(q) || String(t.tid) === q;
+  });
+  $('#tlist').innerHTML = items.map(t => {
+    const dot = tUnsaved(t) ? '<span class="dot unsaved" title="Unsaved changes"></span>' : tChg(t) ? '<span class="dot chg" title="Changed from the original game"></span>' : '';
+    return `<button class="titem" type="button" data-tid="${t.tid}" aria-current="${t.tid === S.tid}">${esc(teamName(t.tid))}${dot}<span class="n">${t.tid}</span></button>`;
+  }).join('') || '<p class="mut">No teams match.</p>';
+}
+
+function slotWarnings(t, i, id) {
+  const out = [];
+  if (!id) { if (t.slots.some(Boolean)) out.push('<span class="chip warn">Empty slot</span>'); return out; }
+  const p = S.P.get(id);
+  if (!p) { out.push('<span class="chip warn" title="This id is in the shipped data but has no player record">No player record</span>'); return out; }
+  if (i < 15) {
+    const want = SLOT_POS[i];
+    const fits = p.pos.includes(want) || ((want === 5 || want === 6) && (p.pos.includes(5) || p.pos.includes(6)));
+    if (!fits) out.push(`<span class="chip warn" title="${esc(baseName(p.name))} is listed at ${esc(p.pos.filter(Boolean).map(posName).join(', '))}">Not listed at ${esc(posName(want))}</span>`);
+  }
+  const nt = nationalTeam(t.tid);
+  if (nt && p.nat >>> 0 !== 2 ** nt.bit) out.push(`<span class="chip warn">Not ${esc(nt.name)}</span>`);
+  return out;
+}
+
+function renderSquad() {
+  const el = $('#squad'), t = team(S.tid);
+  if (!t) { el.innerHTML = '<div class="empty"><h2>Pick a team</h2></div>'; return; }
+  const o = S.OT.get(t.tid);
+  const filled = t.slots.filter(Boolean).length;
+  const nt = nationalTeam(t.tid);
+  let rows = '';
+  for (const part of SQUAD_PARTS) {
+    rows += `<tr><th colspan="6">${part.l}</th></tr>`;
+    for (let i = part.a; i < part.b; i++) {
+      const id = t.slots[i], p = S.P.get(id), changed = id !== o.slots[i];
+      const cls = [changed ? 'chg' : '', S.swapFrom === i ? 'swap-from' : ''].join(' ').trim();
+      const who = id
+        ? `${p ? `<button class="plink" type="button" data-edit="${id}">${esc(baseName(p.name))}</button>${starHTML(p)}` : `<span>#${id}</span>`}${changed ? `<span class="was">was ${o.slots[i] ? esc(pname(o.slots[i])) : 'empty'}</span>` : ''}<span class="sub">${p ? `${esc(posCodes(p))} · ${esc(natName(p.nat))}` : ''}</span>`
+        : `<span class="mut">Empty</span>${changed ? `<span class="was">was ${esc(pname(o.slots[i]))}</span>` : ''}`;
+      rows += `<tr data-slot="${i}" class="${cls}"><td class="no">${i + 1}</td><td class="slotpos">${i < 15 ? SLOT_LABEL[i] : ''}</td><td class="who">${who}</td><td class="ovr num">${p ? ovr(p) : ''}</td><td class="warn">${slotWarnings(t, i, id).join(' ')}</td>
+        <td class="acts"><button class="btn sm" type="button" data-act="replace">Replace</button> <button class="btn sm" type="button" data-act="move">${S.swapFrom === i ? 'Cancel' : 'Move'}</button>${id ? ' <button class="btn sm" type="button" data-act="clear" title="Empty this slot" aria-label="Empty slot ' + (i + 1) + '">✕</button>' : ''}</td></tr>`;
+    }
+  }
+  const members = t.slots.filter(Boolean);
+  const roles = t.roles.map((rid, i) => {
+    const opts = members.map(id => `<option value="${id}"${id === rid ? ' selected' : ''}>#${t.slots.indexOf(id) + 1} ${esc(pname(id))}</option>`);
+    if (rid && !members.includes(rid)) opts.unshift(`<option value="${rid}" selected>${esc(pname(rid))} (not in squad)</option>`);
+    if (!rid) opts.unshift('<option value="0" selected>None</option>');
+    const warn = rid && !members.includes(rid) ? '<span class="chip warn">Not in the squad</span>' : '';
+    const chg = rid !== o.roles[i];
+    return `<div class="role${chg ? ' chg' : ''}"><label for="role-${i}">${ROLE_LABEL[i]}</label><div style="display:flex;gap:6px;align-items:center;min-width:0"><select id="role-${i}" data-role="${i}">${opts.join('')}</select>${warn}</div></div>`;
+  }).join('');
+  const vals = t.values.map((v, i) => `<label class="fld${v !== o.values[i] ? ' chg' : ''}" style="padding:2px"><span class="x">Value ${i + 1}</span><input type="number" min="0" max="255" data-tval="${i}" value="${v}"></label>`).join('');
+  el.innerHTML = `
+    <div class="sq-head">
+      <div><p class="eyebrow">Team ${t.tid}${nt ? ' · national side' : ''}</p><h1>${esc(teamName(t.tid))}</h1>
+      <p class="meta">${filled} of 30 slots filled · slots 1–15 are the starting line-up</p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${tUnsaved(t) ? '<button class="btn sm" type="button" data-act="team-undo">Undo unsaved changes</button>' : ''}
+        ${tChg(t) ? '<button class="btn sm" type="button" data-act="team-reset">Reset to original squad</button>' : ''}
+      </div>
+    </div>
+    ${S.swapFrom !== null ? `<div class="swapbar">Moving <b>#${S.swapFrom + 1} ${t.slots[S.swapFrom] ? esc(pname(t.slots[S.swapFrom])) : '(empty)'}</b>. Click the slot to swap with, or press Esc.</div>` : ''}
+    <table class="sq${S.swapFrom !== null ? ' swapping' : ''}"><tbody>${rows}</tbody></table>
+    <div class="cards">
+      <div class="card"><h2>Captain and kickers</h2>${roles}
+        <p class="note">Role 1 holds the captain in nearly every team. Most teams give all five kicking roles to the fly half. Role 2 varies and its purpose isn't confirmed yet.</p></div>
+      <details class="card"><summary style="cursor:pointer"><h2 style="display:inline">Team values</h2></summary>
+        <div class="tvals">${vals}</div>
+        <p class="note">Ten numbers stored with each team, probably the ratings shown on team select. Their meaning isn't confirmed, and the game doesn't recalculate them when you change the squad.</p></details>
+    </div>`;
+}
+
+function renderPicker() {
+  const el = $('#picker');
+  if (S.pick === null) { el.hidden = true; return; }
+  el.hidden = false;
+  const t = team(S.tid), i = S.pick;
+  if (!el.dataset.ready || el.dataset.for !== `${S.tid}-${i}`) {
+    const nt = nationalTeam(t.tid);
+    el.dataset.ready = '1'; el.dataset.for = `${S.tid}-${i}`;
+    el.innerHTML = `<div class="ph">
+      <h2>Slot ${i + 1}${i < 15 ? ` · ${SLOT_LABEL[i]}` : ''}<button class="btn sm" type="button" data-act="pick-close" aria-label="Close">✕</button></h2>
+      <input class="search" id="kq" type="search" placeholder="Search by name" autocomplete="off" aria-label="Search players">
+      <div class="filters" style="margin:0">
+        <select id="kpos" aria-label="Position"><option value="">Any position</option>${S.meta.positions.map((n, c) => (c ? `<option value="${c}"${i < 15 && SLOT_POS[i] === c ? ' selected' : ''}>${n}</option>` : '')).join('')}</select>
+        <select id="knat" aria-label="Nationality"><option value="">Any nationality</option>${[...S.meta.nationalities].sort((a, b) => a.name.localeCompare(b.name)).map(n => `<option value="${n.bit}">${n.name}${nt && nt.bit === n.bit ? ' (this team)' : ''}</option>`).join('')}</select>
+      </div></div><div class="pl" id="klist"></div>`;
+    setTimeout(() => $('#kq') && $('#kq').focus(), 0);
+  }
+  const q = norm($('#kq').value.trim()), pos = +$('#kpos').value, nat = $('#knat').value;
+  let list = S.cur.players.filter(p => (!q || norm(p.name).includes(q)) && (!pos || p.pos.includes(pos)) && (nat === '' || p.nat >>> 0 === 2 ** +nat));
+  list.sort((a, b) => ovr(b) - ovr(a) || surname(a.name).localeCompare(surname(b.name)));
+  const total = list.length; list = list.slice(0, 150);
+  const outside = q && (pos || nat !== '') ? S.cur.players.filter(p => norm(p.name).includes(q)).length - total : 0;
+  $('#klist').innerHTML = list.map(p => {
+    const inHere = t.slots.indexOf(p.id);
+    const n = squadsOf(p.id).length;
+    return `<button class="pick" type="button" data-pick="${p.id}"><span class="nm">${esc(baseName(p.name))}${starHTML(p)}</span><span class="o num">${ovr(p)}</span>
+      <span class="sub">${esc(posCodes(p))} · ${esc(natName(p.nat))} · ${inHere >= 0 ? `<b>already #${inHere + 1}, will swap</b>` : n ? `in ${n} squad${n > 1 ? 's' : ''}` : 'in no squad'}</span></button>`;
+  }).join('') + (total > list.length ? `<p class="note" style="padding:8px 4px">Showing the top 150 of ${total}. Search by name to find others.</p>` : '')
+    + (outside > 0 ? `<button class="btn sm" type="button" data-act="pick-clearf" style="margin:10px 4px">Show ${outside} more named “${esc($('#kq').value.trim())}” in other positions or nationalities</button>` : '')
+    + (!total && !outside ? '<p class="mut" style="padding:8px 4px">No players match.</p>' : '');
+}
+
+function setSlot(i, id) {
+  const t = team(S.tid);
+  const at = t.slots.indexOf(id);
+  if (id && at >= 0 && at !== i) { t.slots[at] = t.slots[i]; }
+  t.slots[i] = id;
+  changed();
+}
+
+$('#tlist').addEventListener('click', e => {
+  const b = e.target.closest('[data-tid]'); if (!b) return;
+  S.tid = +b.dataset.tid; S.swapFrom = null; S.pick = null;
+  renderTeamList(); renderSquad(); renderPicker();
+  $('#squad').scrollTop = 0;
+});
+$('#tq').addEventListener('input', renderTeamList);
+$('#tempty').addEventListener('change', renderTeamList);
+
+$('#squad').addEventListener('click', e => {
+  const t = team(S.tid);
+  const ed = e.target.closest('[data-edit]');
+  if (ed && S.swapFrom === null) { openPlayer(+ed.dataset.edit); return; }
+  const act = e.target.closest('[data-act]');
+  const row = e.target.closest('tr[data-slot]');
+  if (act && act.dataset.act === 'team-undo') { Object.assign(t, clone(S.ST.get(t.tid))); changed(); return; }
+  if (act && act.dataset.act === 'team-reset') { Object.assign(t, clone(S.OT.get(t.tid))); changed(); return; }
+  if (!row) return;
+  const i = +row.dataset.slot;
+  if (S.swapFrom !== null && (!act || act.dataset.act === 'move')) {
+    if (S.swapFrom !== i) { const a = t.slots[S.swapFrom]; t.slots[S.swapFrom] = t.slots[i]; t.slots[i] = a; }
+    S.swapFrom = null; changed(); return;
+  }
+  if (!act) return;
+  if (act.dataset.act === 'move') { S.swapFrom = i; S.pick = null; renderSquad(); renderPicker(); }
+  else if (act.dataset.act === 'replace') { S.pick = i; S.swapFrom = null; renderSquad(); renderPicker(); }
+  else if (act.dataset.act === 'clear') { t.slots[i] = 0; changed(); }
+});
+$('#squad').addEventListener('change', e => {
+  const t = team(S.tid);
+  const r = e.target.closest('[data-role]');
+  if (r) { t.roles[+r.dataset.role] = +r.value; changed(); return; }
+  const v = e.target.closest('[data-tval]');
+  if (v) { t.values[+v.dataset.tval] = v.value === '' ? NaN : Number(v.value); changed(); }
+});
+$('#picker').addEventListener('click', e => {
+  if (e.target.closest('[data-act="pick-close"]')) { S.pick = null; renderPicker(); return; }
+  if (e.target.closest('[data-act="pick-clearf"]')) { $('#kpos').value = ''; $('#knat').value = ''; renderPicker(); return; }
+  const b = e.target.closest('[data-pick]');
+  if (b) { const i = S.pick; S.pick = null; setSlot(i, +b.dataset.pick); renderPicker(); }
+});
+$('#picker').addEventListener('input', e => { if (e.target.matches('#kq, #kpos, #knat')) renderPicker(); });
+
+/* ---------- Players ---------- */
+function buildPlayerFilters() {
+  $('#fpos').innerHTML = '<option value="">Any position</option>' + S.meta.positions.map((n, c) => (c ? `<option value="${c}">${n}</option>` : '')).join('');
+  $('#fnat').innerHTML = '<option value="">Any nationality</option>' + [...S.meta.nationalities].sort((a, b) => a.name.localeCompare(b.name)).map(n => `<option value="${n.bit}">${n.name}</option>`).join('');
+  $('#fteam').innerHTML = '<option value="">Any team</option>' + S.cur.teams.filter(t => t.slots.some(Boolean)).map(t => `<option value="${t.tid}">${esc(teamName(t.tid))}</option>`).join('');
+}
+function filteredPlayers() {
+  const q = norm($('#pq').value.trim()), pos = +$('#fpos').value, nat = $('#fnat').value, tid = +$('#fteam').value, chg = $('#fchg').checked;
+  const inTeam = tid ? new Set(team(tid).slots) : null;
+  const list = S.cur.players.filter(p => (!q || norm(p.name).includes(q) || String(p.id) === q) && (!pos || p.pos.includes(pos))
+    && (nat === '' || p.nat >>> 0 === 2 ** +nat) && (!inTeam || inTeam.has(p.id)) && (!chg || pChg(p) || pUnsaved(p)));
+  if (inTeam) { const t = team(tid); list.sort((a, b) => t.slots.indexOf(a.id) - t.slots.indexOf(b.id)); }
+  else list.sort((a, b) => surname(a.name).localeCompare(surname(b.name)));
+  return list;
+}
+function playerRow(p) {
+  const dot = pUnsaved(p) ? '<span class="dot unsaved" title="Unsaved changes"></span>' : pChg(p) ? '<span class="dot chg" title="Changed from the original game"></span>' : '<span></span>';
+  return `<button class="pitem" type="button" data-pid="${p.id}" aria-current="${p.id === S.pid}"><span class="nm">${esc(baseName(p.name))}${starHTML(p)}<span class="sub">${esc(posCodes(p))} · ${esc(natName(p.nat))}</span></span>${dot}<span class="o num">${ovr(p)}</span></button>`;
+}
+function renderPlayerList() {
+  const list = filteredPlayers();
+  $('#plist').innerHTML = `<p class="note" style="margin:0 0 4px">${list.length.toLocaleString()} player${list.length === 1 ? '' : 's'}</p>`
+    + list.slice(0, S.plimit).map(playerRow).join('')
+    + (list.length > S.plimit ? `<button class="btn sm" type="button" data-more style="margin:10px auto">Show more</button>` : '');
+}
+function refreshPlayerRow(p) {
+  const row = $(`#plist [data-pid="${p.id}"]`);
+  if (row) row.outerHTML = playerRow(p);
+}
+
+function field(key, label, inner, extra = '') {
+  return `<div class="fld" data-wrap="${key}"><label class="lb" for="f-${key}">${label}</label>${inner}${extra}<span class="orig" data-orig="${key}"></span></div>`;
+}
+function renderPlayerForm() {
+  const el = $('#pform');
+  const p = S.P.get(S.pid);
+  if (!p) { el.innerHTML = `<div class="empty"><h2>Pick a player</h2><p>Search on the left, or click a name in any squad.</p></div>`; return; }
+  const posSel = (k, allowNone) => {
+    const v = p.pos[k], opts = [];
+    if (allowNone || v === 0) opts.push(`<option value="0"${v === 0 ? ' selected' : ''}>None</option>`);
+    S.meta.positions.forEach((n, c) => { if (c) opts.push(`<option value="${c}"${c === v ? ' selected' : ''}>${n}</option>`); });
+    if (v > 12) opts.push(`<option value="${v}" selected>Code ${v} (as shipped)</option>`);
+    return `<select id="f-pos${k}" data-f="pos" data-i="${k}">${opts.join('')}</select>`;
+  };
+  const nat = natOf(p.nat);
+  const natSel = `<select id="f-nat" data-f="nat">${nat ? '' : `<option value="raw" selected>Other (${p.nat})</option>`}${[...S.meta.nationalities].sort((a, b) => a.name.localeCompare(b.name)).map(n => `<option value="${n.bit}"${nat && nat.bit === n.bit ? ' selected' : ''}>${n.name}</option>`).join('')}</select>`;
+  const ratings = GROUPS.map(g => `<div class="rg"><h3>${g.l}</h3>${g.idx.map(i => `<div class="rrow" data-wrap="r${i}"><span>${S.meta.ratings[i]}</span><input type="range" min="0" max="100" data-f="r" data-i="${i}" value="${p.r[i]}" aria-label="${S.meta.ratings[i]}"><input type="number" min="0" max="100" data-f="r" data-i="${i}" value="${p.r[i]}" aria-label="${S.meta.ratings[i]} value"><span class="orig" data-orig="r${i}"></span></div>`).join('')}</div>`).join('');
+  const skills = S.meta.skills.map((s, k) => `<label class="skill" data-wrap="sk${k}"><input type="checkbox" data-f="sk" data-i="${k}"${p.sk >> k & 1 ? ' checked' : ''}>${s}</label>`).join('');
+  const ir = [0, 1, 2, 3].map(v => `<label><input type="radio" name="ir" data-f="ir" value="${v}"${p.ir === v ? ' checked' : ''}>${v}</label>`).join('');
+  const sq = squadsOf(p.id);
+  const sharers = S.cur.players.filter(q => q.head === p.head && q.id !== p.id);
+  el.innerHTML = `<div class="pf">
+    <div class="pf-head">
+      <div class="ovrbox" title="Overall: the explorer's weighted estimate for the main position"><b id="f-ovr">${ovr(p)}</b><span>Overall</span></div>
+      <div style="min-width:0;flex:1"><p class="eyebrow">Player ${String(p.id).padStart(5, '0')}</p><h1 id="f-title">${esc(baseName(p.name))}${starHTML(p)}</h1></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sm" type="button" data-act="p-undo"${pUnsaved(p) ? '' : ' disabled'}>Undo unsaved changes</button>
+        <button class="btn sm" type="button" data-act="p-reset"${pChg(p) ? '' : ' disabled'}>Reset to original</button>
+      </div>
+    </div>
+    <div class="err-msg" id="f-err"></div>
+    <div class="card"><h2>Identity</h2><div class="grid2">
+      ${field('name', 'Name (15 characters at most, ★ counts as one)', `<input type="text" id="f-name" data-f="name" value="${esc(baseName(p.name))}" maxlength="15" spellcheck="false">`)}
+      ${field('star', 'Star player', `<span class="check" style="margin:0"><input type="checkbox" id="f-star" data-f="star"${isStar(p.name) ? ' checked' : ''}> Mark with ★ (adds ^ to the name)</span>`)}
+      ${field('nat', 'Nationality', natSel)}
+      ${field('pos0', 'Main position', posSel(0, false))}
+      ${field('pos1', 'Second position', posSel(1, true))}
+      ${field('pos2', 'Third position', posSel(2, true))}
+    </div></div>
+    <div class="card"><h2>Build</h2><div class="grid2">
+      ${field('inch', 'Height (inches)', `<input type="number" id="f-inch" min="60" max="100" data-f="inch" value="${p.inch}">`, `<span class="x" id="x-inch">${cm(p.inch)} cm · ${ftin(p.inch)}</span>`)}
+      ${field('lb', 'Weight (lb)', `<input type="number" id="f-lb" min="100" max="600" data-f="lb" value="${p.lb}">`, `<span class="x" id="x-lb">${kg(p.lb)} kg · ${stone(p.lb)}</span>`)}
+    </div></div>
+    <div class="card"><h2>Ratings</h2><div class="rgroups">${ratings}</div></div>
+    <div class="card"><h2>Special skills</h2><div class="skills">${skills}</div>
+      <div class="fld" data-wrap="ir" style="flex-direction:row;align-items:center;gap:12px;padding-left:0"><span class="lb">I. Resist</span><div class="seg">${ir}</div><span class="orig" data-orig="ir"></span></div></div>
+    <div class="card"><h2>Head model</h2><div class="grid2">
+      ${field('head', 'Head model id', `<input type="number" id="f-head" min="0" max="65535" data-f="head" value="${p.head}">`, `<span class="x">${sharers.length ? `Also used by ${sharers.slice(0, 8).map(q => esc(baseName(q.name))).join(', ')}${sharers.length > 8 ? ` and ${sharers.length - 8} more` : ''}` : 'Not shared with any other player'}</span>`)}
+    </div><p class="note">Only head models already used by a player in the game are allowed.</p></div>
+    <div class="card"><h2>Squads</h2><div class="teamsin">${sq.length ? sq.map(s => `<button class="btn sm" type="button" data-goteam="${s.tid}">#${s.slot} ${esc(teamName(s.tid))}</button>`).join('') : '<span class="mut">Not in any squad. Add him from the Squads tab.</span>'}</div></div>
+  </div>`;
+  markPlayerChanges();
+}
+function markPlayerChanges() {
+  const p = S.P.get(S.pid), o = S.OP.get(S.pid);
+  if (!p) return;
+  const checks = {
+    name: [baseName(p.name) !== baseName(o.name), baseName(o.name)],
+    star: [isStar(p.name) !== isStar(o.name), isStar(o.name) ? 'yes' : 'no'],
+    nat: [p.nat !== o.nat, natName(o.nat)],
+    pos0: [p.pos[0] !== o.pos[0], posName(o.pos[0])], pos1: [p.pos[1] !== o.pos[1], posName(o.pos[1])], pos2: [p.pos[2] !== o.pos[2], posName(o.pos[2])],
+    inch: [p.inch !== o.inch, `${o.inch} in`], lb: [p.lb !== o.lb, `${o.lb} lb`], ir: [p.ir !== o.ir, o.ir], head: [p.head !== o.head, o.head],
+  };
+  p.r.forEach((v, i) => { checks['r' + i] = [v !== o.r[i], o.r[i]]; });
+  S.meta.skills.forEach((_, k) => { checks['sk' + k] = [(p.sk >> k & 1) !== (o.sk >> k & 1), null]; });
+  for (const [key, [chg, was]] of Object.entries(checks)) {
+    const w = $(`#pform [data-wrap="${key}"]`); if (w) w.classList.toggle('chg', chg);
+    const s = $(`#pform [data-orig="${key}"]`); if (s) s.textContent = chg && was !== null ? (/^r\d+$/.test(key) ? `was ${was}` : `Original: ${was}`) : '';
+  }
+  $('#f-ovr').textContent = ovr(p);
+  $('#f-title').innerHTML = esc(baseName(p.name)) + starHTML(p);
+  const errs = problems().filter(x => x.pid === p.id).map(x => x.msg.replace(/^[^:]+: /, ''));
+  $('#f-err').textContent = errs.length ? 'To fix before saving: ' + errs.join('; ') : '';
+  $('[data-act="p-undo"]').disabled = !pUnsaved(p);
+  $('[data-act="p-reset"]').disabled = !pChg(p);
+}
+function readField(p, el) {
+  const f = el.dataset.f, i = +el.dataset.i;
+  const num = () => (el.value === '' ? NaN : Number(el.value));
+  if (f === 'name') p.name = el.value + (isStar(p.name) ? '^' : '');
+  else if (f === 'star') p.name = baseName(p.name) + (el.checked ? '^' : '');
+  else if (f === 'pos') p.pos[i] = +el.value;
+  else if (f === 'nat') { if (el.value !== 'raw') p.nat = 2 ** +el.value; }
+  else if (f === 'inch') { p.inch = num(); if (Number.isFinite(p.inch)) $('#x-inch').textContent = `${cm(p.inch)} cm · ${ftin(p.inch)}`; }
+  else if (f === 'lb') { p.lb = num(); if (Number.isFinite(p.lb)) $('#x-lb').textContent = `${kg(p.lb)} kg · ${stone(p.lb)}`; }
+  else if (f === 'r') { p.r[i] = num(); document.querySelectorAll(`#pform [data-f="r"][data-i="${i}"]`).forEach(x => { if (x !== el) x.value = el.value; }); }
+  else if (f === 'sk') p.sk = el.checked ? p.sk | (1 << i) : p.sk & ~(1 << i);
+  else if (f === 'ir') p.ir = +el.value;
+  else if (f === 'head') p.head = num();
+}
+$('#pform').addEventListener('input', e => {
+  const el = e.target.closest('[data-f]'); const p = S.P.get(S.pid);
+  if (!el || !p) return;
+  readField(p, el); markPlayerChanges(); refreshPlayerRow(p); renderHeader();
+});
+$('#pform').addEventListener('click', e => {
+  const p = S.P.get(S.pid);
+  const g = e.target.closest('[data-goteam]');
+  if (g) { S.tid = +g.dataset.goteam; setTab('squads'); return; }
+  const a = e.target.closest('[data-act]');
+  if (!a || !p) return;
+  if (a.dataset.act === 'p-undo') Object.assign(p, clone(S.SP.get(p.id)));
+  else if (a.dataset.act === 'p-reset') Object.assign(p, clone(S.OP.get(p.id)));
+  else return;
+  renderPlayerForm(); refreshPlayerRow(p); renderHeader();
+});
+$('#plist').addEventListener('click', e => {
+  if (e.target.closest('[data-more]')) { S.plimit += 300; renderPlayerList(); return; }
+  const b = e.target.closest('[data-pid]'); if (!b) return;
+  S.pid = +b.dataset.pid;
+  document.querySelectorAll('#plist [aria-current="true"]').forEach(x => x.setAttribute('aria-current', 'false'));
+  b.setAttribute('aria-current', 'true');
+  renderPlayerForm(); $('#pform').scrollTop = 0;
+});
+['#pq', '#fpos', '#fnat', '#fteam', '#fchg'].forEach(s => $(s).addEventListener('input', () => { S.plimit = 200; renderPlayerList(); }));
+
+function openPlayer(id) {
+  S.pid = id; setTab('players');
+  const row = $(`#plist [data-pid="${id}"]`);
+  if (row) row.scrollIntoView({ block: 'nearest' });
+}
+
+/* ---------- Tabs, saving ---------- */
+function setTab(tab) {
+  S.tab = tab;
+  document.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-pressed', b.dataset.tab === tab));
+  $('#view-squads').hidden = tab !== 'squads';
+  $('#view-players').hidden = tab !== 'players';
+  if (tab === 'squads') { renderTeamList(); renderSquad(); renderPicker(); }
+  else { renderPlayerList(); renderPlayerForm(); }
+}
+document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+
+function changed() {
+  renderHeader();
+  if (S.tab === 'squads') { renderTeamList(); renderSquad(); renderPicker(); }
+}
+function renderAll() { renderHeader(); buildPlayerFilters(); setTab(S.tab); }
+
+async function api(path, body) {
+  const res = await fetch(path, body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const data = await res.json().catch(() => ({ error: `The editor server answered ${res.status}` }));
+  if (!res.ok) throw new Error(data.error || `The editor server answered ${res.status}`);
+  return data;
+}
+async function busy(label, fn) {
+  S.busy = true; renderHeader();
+  const btn = $('#save'), old = btn.textContent; if (label) btn.textContent = label;
+  try { await fn(); } catch (e) { banner(e.message); } finally { S.busy = false; btn.textContent = old; renderHeader(); }
+}
+$('#save').addEventListener('click', () => busy('Saving…', async () => {
+  banner('');
+  const state = await api('/api/save', { players: S.cur.players, teams: S.cur.teams });
+  load(state); renderAll();
+  toast('Saved. Start Rugby 08 from the Start menu or desktop shortcut (not as administrator) to play with your changes.');
+}));
+$('#discard').addEventListener('click', () => { S.cur = clone(S.saved); index(); S.swapFrom = null; S.pick = null; renderAll(); toast('Unsaved changes discarded'); });
+$('#restore-open').addEventListener('click', () => { $('#restore-pop').hidden = false; $('#restore-cancel').focus(); });
+$('#restore-cancel').addEventListener('click', () => { $('#restore-pop').hidden = true; });
+$('#restore-go').addEventListener('click', () => busy(null, async () => {
+  $('#restore-pop').hidden = true; banner('');
+  const state = await api('/api/restore', {});
+  load(state); renderAll();
+  toast('The game is back to its original squads and players.');
+}));
+
+document.addEventListener('keydown', e => {
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+  if (e.key === 'Escape') {
+    if (!$('#restore-pop').hidden) { $('#restore-pop').hidden = true; return; }
+    if (S.swapFrom !== null || S.pick !== null) { S.swapFrom = null; S.pick = null; renderSquad(); renderPicker(); }
+    return;
+  }
+  if (e.key === '/' && !typing) { e.preventDefault(); (S.tab === 'squads' ? (S.pick !== null ? $('#kq') : $('#tq')) : $('#pq')).focus(); }
+});
+window.addEventListener('beforeunload', e => {
+  if (S.cur && (S.cur.players.some(pUnsaved) || S.cur.teams.some(tUnsaved))) { e.preventDefault(); e.returnValue = ''; }
+});
+new ResizeObserver(() => document.documentElement.style.setProperty('--hdr', $('#top').offsetHeight + 'px')).observe($('#top'));
+
+(async () => {
+  try {
+    load(await api('/api/state'));
+    if (!team(S.tid) || !team(S.tid).slots.some(Boolean)) S.tid = (S.cur.teams.find(t => t.slots.some(Boolean)) || { tid: 1 }).tid;
+    if (S.meta.warning) banner(S.meta.warning);
+    renderAll();
+  } catch (e) {
+    banner(`Couldn't load the game data: ${e.message}. Check the editor window for details.`);
+    $('#pill').textContent = 'Not loaded';
+  }
+})();
+</script>
+</body>
+</html>
