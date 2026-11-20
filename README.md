@@ -36,7 +36,9 @@ It opens http://localhost:4319. Keep the window open while you edit.
 - **Windows, game in Program Files:** the edited copies go to Windows' VirtualStore folder for the install. The game reads them when it's started normally from the Start menu or desktop shortcut, and ignores them if it's run as administrator. The files in Program Files are never changed. **Restore original** deletes the copies.
 - **Linux or macOS (Wine), or a Windows install outside Program Files:** the first save keeps the original as `data.gob.original` next to it. Every save is built from that backup and written over `data.gob`. **Restore original** puts the backup back. Add `--direct` to use this on Windows too.
 
-The Linux and macOS support is tested on Windows with a copied install, not yet on a real Wine setup.
+**If the game still shows the old squads after saving:** the game keeps a roster for each profile, a `<profile>.ros` folder in `Documents/EA SPORTS(TM) Rugby 08` (inside the Wine or Proton prefix on Linux, for example `~/.local/share/Steam/steamapps/compatdata/<app id>/pfx/drive_c/users/steamuser/Documents/EA SPORTS(TM) Rugby 08` on a Steam Deck). A profile that has one plays with that roster and ignores the squads in `data.gob`. With the game closed, move the `.ros` folder out of that folder (keep it as a backup; changes you made inside the game are in it) and start the game again. It builds a new roster from the edited `data.gob`. The same goes for **Restore original**: a profile's roster keeps your edits until it is moved aside. The editor lists the ones it finds when it starts and after each save. The folder name can start with a space, so keep the quotes in a shell command.
+
+The Linux and macOS support is tested on Windows with a copied install, not yet on a real Wine setup. Moving the `.ros` folder aside is confirmed on a Steam Deck (Proton).
 
 What isn't known yet:
 - Role 2 of each team (role 1 is usually the captain, roles 3–7 are kicking duties)

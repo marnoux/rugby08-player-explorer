@@ -75,6 +75,37 @@ function findGame() {
   return null;
 }
 
+// The game keeps a roster for each profile, "<profile>.ros", in the user's Documents folder. A profile that has one
+// plays with that roster, not with the squads in data.gob, so an edited data.gob only shows up in the game once
+// those are moved aside and the game rebuilds them. Returns the paths of the ones it finds. `game` is the install
+// folder; when it sits inside a Wine prefix, that prefix is searched too.
+function findProfileRosters(game) {
+  const sub = 'EA SPORTS(TM) Rugby 08', home = os.homedir(), docs = [];
+  if (process.platform === 'win32') {
+    for (const d of ['Documents', 'My Documents']) docs.push(path.join(process.env.USERPROFILE || home, d, sub));
+  } else {
+    const prefixes = [process.env.WINEPREFIX, path.join(home, '.wine')];
+    const inPrefix = /^(.*?)[\\/]drive_c[\\/]/i.exec(game || '');
+    if (inPrefix) prefixes.push(inPrefix[1]);
+    const children = (dir, ...rest) => { try { return fs.readdirSync(dir).map(d => path.join(dir, d, ...rest)); } catch { return []; } };
+    prefixes.push(...children(path.join(home, 'Games')));
+    // Steam runs each game in its own Proton prefix; the Deck, a desktop install and Flatpak Steam keep them apart.
+    for (const steam of [path.join(home, '.local', 'share', 'Steam'), path.join(home, '.steam', 'steam'), path.join(home, '.var', 'app', 'com.valvesoftware.Steam', '.local', 'share', 'Steam')]) {
+      prefixes.push(...children(path.join(steam, 'steamapps', 'compatdata'), 'pfx'));
+    }
+    for (const pre of prefixes.filter(Boolean)) {
+      for (const user of children(path.join(pre, 'drive_c', 'users'))) docs.push(path.join(user, 'Documents', sub), path.join(user, 'My Documents', sub));
+    }
+  }
+  const found = new Set();
+  for (const dir of docs) {
+    let names = [];
+    try { names = fs.readdirSync(dir); } catch { continue; }
+    for (const n of names) if (/\.ros$/i.test(n)) { try { found.add(fs.realpathSync(path.join(dir, n))); } catch {} }
+  }
+  return [...found];
+}
+
 /* ---------- Archive ---------- */
 function readDir(buf) {
   if (buf.toString('latin1', 0, 4) !== 'BIGF') throw new Error('Not a BIGF archive');
@@ -299,5 +330,5 @@ function teamNamesFromKitXml(xml) {
 
 module.exports = {
   RDF_NAME, KIT_XML_NAME, SLOTS, ROLES, TEAM_VALUES, RATINGS, SKILLS, POSITIONS, NATIONALITIES,
-  hasGob, findGame, readDir, unrefpack, refpackLiteral, readEntryFromFile, hasEntry, writePatchedGob, copyInto, parseDb, applyDb, teamNamesFromKitXml,
+  hasGob, findGame, findProfileRosters, readDir, unrefpack, refpackLiteral, readEntryFromFile, hasEntry, writePatchedGob, copyInto, parseDb, applyDb, teamNamesFromKitXml,
 };

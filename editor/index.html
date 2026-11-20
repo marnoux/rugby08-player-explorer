@@ -366,6 +366,16 @@ function banner(msg, kind = 'err') {
   const b = $('#banner');
   b.hidden = !msg; b.className = 'banner ' + kind; b.textContent = msg || '';
 }
+// The game keeps a roster per profile (<profile>.ros) and plays with it instead of data.gob, so after a save or
+// restore the old squads can still show up. Name the files so they can be moved aside.
+function rosterReminder(what) {
+  const r = S.meta.rosters || [];
+  if (!r.length) return;
+  banner((what === 'saved'
+    ? 'If the game still shows the old squads: it plays with a roster saved for each profile, not with the edited data.gob. Close the game and move these aside (keep a copy: any changes made in the game itself are in them), and it builds new ones from your edits:'
+    : 'If the game still shows your edits: it plays with a roster saved for each profile, which still holds them. Close the game and move these aside, and it builds new ones from the original data:')
+    + '\n' + r.join('\n'), 'info');
+}
 function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.hidden = false;
   clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 4200);
@@ -717,6 +727,7 @@ $('#save').addEventListener('click', () => busy('Saving…', async () => {
   const state = await api('/api/save', { players: S.cur.players, teams: S.cur.teams });
   load(state); renderAll();
   toast(modeText().saved);
+  rosterReminder('saved');
 }));
 $('#discard').addEventListener('click', () => { S.cur = clone(S.saved); index(); S.swapFrom = null; S.pick = null; renderAll(); toast('Unsaved changes discarded'); });
 $('#restore-open').addEventListener('click', () => { $('#restore-pop').hidden = false; $('#restore-cancel').focus(); });
@@ -726,6 +737,7 @@ $('#restore-go').addEventListener('click', () => busy(null, async () => {
   const state = await api('/api/restore', {});
   load(state); renderAll();
   toast('The game is back to its original squads and players.');
+  rosterReminder('restored');
 }));
 
 document.addEventListener('keydown', e => {

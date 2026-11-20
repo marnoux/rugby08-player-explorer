@@ -107,7 +107,7 @@ function state() {
     }
   }
   return {
-    game: GAME, mode: MODE, files: FILES.map(f => f.out), source, savedAt, warning,
+    game: GAME, mode: MODE, files: FILES.map(f => f.out), source, savedAt, warning, rosters: g.findProfileRosters(GAME),
     teamNames: TEAM_NAMES, nationalities: g.NATIONALITIES, positions: g.POSITIONS, ratings: g.RATINGS, skills: g.SKILLS,
     current: pub(db), original: pub(ORIG_DB),
   };
@@ -207,6 +207,12 @@ server.listen(PORT, '127.0.0.1', () => {
   console.log(`Game:          ${GAME}`);
   console.log(`Saving:        ${how}`);
   console.log(`               ${FILES.map(f => f.out).join('\n               ')}`);
+  const rosters = g.findProfileRosters(GAME);
+  if (rosters.length) {
+    console.log('\nProfile rosters (the game plays with these instead of the edited data.gob; if it still shows the old\nsquads after you save, close the game and move these aside so it rebuilds them):');
+    for (const r of rosters) console.log(`               ${r}`);
+    console.log('');
+  }
   console.log('Keep this window open while you edit. Press Ctrl+C to stop.');
   if (args.open) openBrowser(`http://localhost:${PORT}`);
 });
