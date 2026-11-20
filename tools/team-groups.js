@@ -14,6 +14,7 @@ const GROUPS = {
   'Italian clubs': ['Treviso', 'Brescia', 'Viadana'],
   'Scottish clubs': ['Borders', 'Edinburgh', 'Glasgow'],
   'Welsh clubs': ['Bridgend', 'Cardiff', 'Llanelli', 'Neath-Swansea', 'Newport Gwent'],
+  'Invitational sides': ['Australia A', 'British & Irish Lions', 'NZ Maori', 'Pacific Islanders'],
 };
 const groupOf = {};
 for (const [g, names] of Object.entries(GROUPS)) for (const n of names) groupOf[n.toLowerCase()] = g;

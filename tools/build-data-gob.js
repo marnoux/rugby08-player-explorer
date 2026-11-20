@@ -10,6 +10,9 @@
 //
 // Team names: a team keeps the name it had in the existing teams.json (matched by team number, or the first time
 // by which players are in it), then the national side for numbers 1-25, then the game's kit list, then "Team N".
+// The kit list's numbers don't always match the team table (its "Maoris" sits on an all-Australian squad), so check
+// any team named from it; a name fixed by hand in teams.json is kept on the next run. A name another team already
+// has gets " (list 2)" and so on, as the game has a second England, Munster, Ulster and Treviso.
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -82,28 +85,32 @@ function build(rdf, kitXml, prev) {
   // 3. National side, kit list or "Team N". A name the existing list already has (an empty team, say) keeps its slug.
   for (const t of db.teams) {
     if (named.has(t.tid)) continue;
-    const name = COUNTRIES[t.tid] || kit[t.tid] || `Team ${t.tid}`;
+    const base = COUNTRIES[t.tid] || kit[t.tid] || `Team ${t.tid}`;
+    const taken = new Set([...named.values()].map(x => x.name));
+    let name = base;
+    for (let k = 2; taken.has(name); k++) name = `${base} (list ${k})`;
     const how = COUNTRIES[t.tid] ? 'national side' : kit[t.tid] ? 'kit list' : 'no name found';
     const old = prevTeams.find(pt => !usedSlugs.has(pt.slug) && (slugify(pt.name) === slugify(name) || pt.slug === slugify(name)));
     if (old) { take(t.tid, old, `${how}, kept existing name`); continue; }
     let slug = slugify(name), n = 2;
     while (usedSlugs.has(slug)) slug = `${slugify(name)}-${n++}`;
-    take(t.tid, { slug, name, group: COUNTRIES[t.tid] ? 'Internationals' : groupOf(name) || 'Other' }, how);
+    take(t.tid, { slug, name, group: COUNTRIES[t.tid] ? 'Internationals' : groupOf(base) || 'Other' }, how);
   }
 
   /* ---------- Squads ---------- */
   const teams = db.teams.map((t, order) => {
     const nm = named.get(t.tid), notes = [];
-    const seen = new Set();
+    const seen = new Set(), unknown = [];
     let n = 0;
     t.slots.forEach((id, i) => {
       if (!id) return;
       const p = players.get(id);
-      if (!p) { notes.push(`Slot ${i + 1} holds player id ${pad5(id)}, which has no player record in the game.`); return; }
+      if (!p) { unknown.push(i + 1); return; }
       if (seen.has(id)) { notes.push(`${p.name} is listed twice (slots ${t.slots.indexOf(id) + 1} and ${i + 1}); shown once.`); return; }
       seen.add(id); n++;
       p.t.push([nm.slug, i + 1]);
     });
+    if (unknown.length) notes.unshift(`${unknown.length === 1 ? 'Slot' : `${unknown.length} slots`} (${unknown.join(', ')}) ${unknown.length === 1 ? 'holds a player id' : 'hold player ids'} with no player record in the game, so ${unknown.length === 1 ? "it isn't" : "they aren't"} shown.`);
     return {
       slug: nm.slug, name: nm.name, group: nm.group, order, n, notes,
       tid: t.tid, roles: t.roles.map(id => (id ? pad5(id) : null)),
