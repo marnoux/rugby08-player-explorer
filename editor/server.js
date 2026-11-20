@@ -20,6 +20,10 @@ const os = require('os');
 const path = require('path');
 const { execFileSync, spawn } = require('child_process');
 const g = require('../tools/gob.js');
+const pocketbase = require('./pocketbase.js');
+
+const PB = pocketbase.loadConfig();
+let pbWarning = null;
 
 const IS_WIN = process.platform === 'win32';
 const args = {};
@@ -128,7 +132,7 @@ function state() {
     }
   }
   return {
-    game: GAME, mode: MODE, files: FILES.map(f => f.out), source, savedAt, warning,
+    game: GAME, mode: MODE, files: FILES.map(f => f.out), source, savedAt, warning: warning || pbWarning,
     teamNames: TEAM_NAMES, nationalities: g.NATIONALITIES, positions: g.POSITIONS, ratings: g.RATINGS, skills: g.SKILLS,
     current: pub(db), original: pub(ORIG_DB),
   };
@@ -213,7 +217,14 @@ const server = http.createServer(async (req, res) => {
         return send(res, 403, { error: 'Requests must come from the editor page.' });
       }
       const body = await readJson(req);
-      if (url.pathname === '/api/save') save(body); else restore();
+      if (url.pathname === '/api/save') {
+        save(body);
+        pbWarning = null;
+        if (PB) {
+          try { await pocketbase.sync(PB, body); console.log('Synced to PocketBase.'); }
+          catch (e) { pbWarning = `Saved to the game, but syncing to PocketBase failed: ${e.message}`; console.error(pbWarning); }
+        }
+      } else restore();
       return send(res, 200, state());
     }
     send(res, 404, { error: 'Not found' });
@@ -228,6 +239,7 @@ server.listen(PORT, '127.0.0.1', () => {
   console.log(`Game:          ${GAME}`);
   console.log(`Saving:        ${how}`);
   console.log(`               ${FILES.map(f => f.out).join('\n               ')}`);
+  console.log(`PocketBase:    ${PB ? `syncing to ${PB.url}` : 'not configured (see editor/pocketbase.js)'}`);
   console.log('Keep this window open while you edit. Press Ctrl+C to stop.');
   if (args.open) openBrowser(`http://localhost:${PORT}`);
 });
