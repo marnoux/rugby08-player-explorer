@@ -22,7 +22,7 @@ A local editor that changes the game itself: squads, captains and kickers, and e
 **Start it** (needs [Node.js](https://nodejs.org) 18 or later):
 
 - **Windows:** double-click `Rugby 08 Editor.cmd`.
-- **Linux or macOS, game under Wine:** run `./rugby08-editor.sh`. It looks for the game in `~/.wine`, `$WINEPREFIX` and `~/Games/*` (Lutris). If yours is elsewhere, add `--game "<the folder that contains Data/data.gob>"`.
+- **Linux or macOS, game under Wine:** run `./rugby08-editor.sh`. It looks for the game in `~/.wine`, `$WINEPREFIX` and `~/Games/*` (Lutris), and for an install folder placed directly in `~/Games`. If yours is elsewhere, add `--game "<the folder that contains Data/data.gob>"`: the folder, not the `data.gob` file. On a Steam Deck, run it in Desktop Mode.
 - **Either:** `node editor/server.js --open`, with the same options.
 
 It opens http://localhost:4319. Keep the window open while you edit.

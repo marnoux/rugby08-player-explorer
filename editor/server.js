@@ -3,7 +3,7 @@
 //   node editor/server.js [--open] [--game <install folder>] [--direct] [--target <folder>] [--port 4319]
 //
 // --game is the folder that contains Data\data.gob. Without it the editor looks in the Windows registry, or on
-// Linux and macOS in the usual Wine prefixes (~/.wine, $WINEPREFIX, ~/Games/*).
+// Linux and macOS in the usual Wine prefixes (~/.wine, $WINEPREFIX, ~/Games/*) or an install folder directly in ~/Games.
 //
 // Where "Save to game" writes, for both Data/data.gob and Data/motion/data.gob:
 //   virtualstore  Windows, game under Program Files (the default there). Edited copies go to Windows' VirtualStore

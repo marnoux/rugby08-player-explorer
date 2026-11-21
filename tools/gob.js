@@ -50,7 +50,7 @@ const NATIONALITIES = [
 const hasGob = dir => fs.existsSync(path.join(dir, 'Data', 'data.gob'));
 
 // The install folder (the one that contains Data/data.gob), or null. On Windows it looks in the registry and the
-// default folder; on Linux and macOS in the usual Wine prefixes (~/.wine, $WINEPREFIX, ~/Games/*).
+// default folder; on Linux and macOS in the usual Wine prefixes (~/.wine, $WINEPREFIX, ~/Games/*) and ~/Games itself.
 function findGame() {
   if (process.platform === 'win32') {
     try {
@@ -61,7 +61,8 @@ function findGame() {
     const def = 'C:\\Program Files (x86)\\EA SPORTS\\EA SPORTS(TM) Rugby 08';
     return hasGob(def) ? def : null;
   }
-  // Wine: look for EA SPORTS/<...Rugby 08...>/Data/data.gob under drive_c of the usual prefixes.
+  // Wine: look for EA SPORTS/<...Rugby 08...>/Data/data.gob under drive_c of the usual prefixes, then for an install
+  // folder directly inside ~/Games.
   const home = os.homedir(), prefixes = [process.env.WINEPREFIX, path.join(home, '.wine')];
   try { for (const d of fs.readdirSync(path.join(home, 'Games'))) prefixes.push(path.join(home, 'Games', d)); } catch {}
   for (const pre of prefixes.filter(Boolean)) {
@@ -72,6 +73,8 @@ function findGame() {
       for (const d of dirs) if (/rugby 08/i.test(d) && hasGob(path.join(ea, d))) return path.join(ea, d);
     }
   }
+  // A copy of the install folder placed directly in ~/Games (for example one added to Steam as a non-Steam game).
+  try { for (const d of fs.readdirSync(path.join(home, 'Games'))) if (/rugby 08/i.test(d) && hasGob(path.join(home, 'Games', d))) return path.join(home, 'Games', d); } catch {}
   return null;
 }
 
